@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/media/hero-dark.jpg">
-    <img src="docs/media/hero-light.jpg" alt="A Verified Asset evidence report for a white dining table with four chairs, on a laptop and a phone: the checked photos on the left, and a verdict for each of the seller's claims on the right." width="100%">
-  </picture>
+  <img src="docs/media/hero.jpg" alt="Verified Asset on a phone and a laptop. The phone shows the evidence report for a white dining table with four chairs: 1 contradicted, 2 supported, 1 inconclusive. The laptop shows the home page, with the pipeline drawn as a stack of glass plates: the seller's claims, the photo with the code on paper, Muse Spark's blind pass, SAM 3.1's box and the verdicts." width="100%">
 </p>
 
 <h1 align="center">Verified Asset</h1>
@@ -34,10 +31,10 @@ Local pickup is where second-hand deals go wrong: the "set of six" has four chai
 
 The seller writes their claims, takes the few photos those claims need with the listing's code written on paper, and gets a report link to paste into the listing. Buyers open it without signing up.
 
-On the [live site](https://verified.adwentech.com), **Try the sample** runs the whole seller flow on the dining set below. It replays recorded Muse Spark observations of those photos, so it needs no photos of your own and makes no API call. Change "Set of 4 chairs" to 6 and check again to see a contradiction.
+On the [live site](https://verified.adwentech.com), **Try the sample** runs the whole seller flow on the dining set below. It replays recorded Muse Spark observations of those photos, so it needs no photos of your own and makes no API call. Change "Set of 4 chairs" to 6 and check again to see a contradiction. The [demo guide](docs/demo-guide.md) walks through every screen with numbered screenshots.
 
 <p align="center">
-  <img src="docs/media/walkthrough.gif" alt="Walkthrough: the seller writes claims, takes guided photos with a code on paper, Muse Spark observes and rules decide, the buyer opens the report, and editing the listing voids it." width="88%">
+  <img src="docs/media/walkthrough.gif" alt="Walkthrough: the seller writes claims, takes guided photos with a code on paper, Muse Spark describes the photos without seeing the claims, fixed rules decide each claim, the buyer opens the report, and editing the listing voids it." width="88%">
 </p>
 
 ## How it works
