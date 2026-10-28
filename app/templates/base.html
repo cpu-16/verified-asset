@@ -303,6 +303,16 @@ h2.pill { margin: 0 0 .45rem; font-size: .95rem; padding: .28rem .6rem; }
 .tile p { margin: 0; }
 .tile img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; background: var(--line); display: block; }
 .tile button { width: 100%; }
+.shot { position: relative; overflow: hidden; border-radius: 8px; }
+.shot img { aspect-ratio: auto; object-fit: fill; }
+.sam-box {
+  position: absolute; border: 2px solid #F02849; border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .8), 0 0 0 9999px rgba(0, 0, 0, .18);
+}
+.sam-box > span {
+  position: absolute; left: -2px; bottom: 100%; padding: 1px 6px; border-radius: 4px 4px 4px 0;
+  background: #F02849; color: #fff; font-size: .6875rem; font-weight: 700; white-space: nowrap;
+}
 .tile-empty {
   aspect-ratio: 4 / 3; border: 2px dashed var(--line); border-radius: 8px;
   display: grid; place-items: center; align-content: center; gap: .25rem;

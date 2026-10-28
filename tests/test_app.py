@@ -1,4 +1,5 @@
 """End-to-end seller -> report -> edit -> invalidation, with a fake observer (no network)."""
+import dataclasses
 import importlib
 import io
 import re
@@ -7,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from app.observation import CheckResult, Count, PhotoObservation
+from app.observation import CheckResult, Count, Defect, PhotoObservation
 
 
 class FakeObserver:
@@ -235,3 +236,22 @@ def test_no_piece_claim_never_gets_sam(client, monkeypatch):
                                                "text0": "White", "value0": "white"})
     monkeypatch.setattr(main, "get_sam", lambda: pytest.fail("SAM without piece-count claim"))
     assert c.post(f"/l/{listing_id}/check?k={key}", follow_redirects=False).status_code == 303
+
+
+def test_sam_boxes_show_only_on_the_seller_page(client):
+    main, c = client
+    listing_id, key = make_listing(c)
+
+    class Boxed(FakeObserver):
+        def observe(self, photos, count_nouns):
+            result = super().observe(photos, count_nouns)
+            result.observations[0] = dataclasses.replace(
+                result.observations[0], defects=(Defect("scratch", "top", box=(16, 12, 48, 24)),))
+            return result
+
+    main.app.state.observer = Boxed()
+    c.post(f"/l/{listing_id}/check?k={key}")
+    page = c.get(f"/l/{listing_id}?k={key}").text
+    assert 'class="sam-box" style="left:25.00%;top:25.00%;width:50.00%;height:25.00%"' in page
+    token = c.post(f"/l/{listing_id}/report?k={key}", follow_redirects=False).headers["location"].rsplit("/", 1)[1]
+    assert 'class="sam-box"' not in c.get(f"/r/{token}").text and "box" not in c.get(f"/api/r/{token}").text

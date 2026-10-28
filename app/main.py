@@ -4,6 +4,7 @@ Sellers have no accounts: the listing URL carries a secret `k` (capability link)
 """
 import base64
 import binascii
+import io
 import json
 import os
 import time
@@ -110,12 +111,28 @@ def listing_page(request: Request, listing_id: str, k: str):
     check = store.latest_check(version["id"])
     verdicts = {v["claim_id"]: v for v in json.loads(check["verdicts"])} if check and check["ok"] else {}
     stale = bool(check) and json.loads(check["photos"]) != {s: p["id"] for s, p in photos.items()}
+    marks = sam_marks(check, photos) if check and check["ok"] and not stale else {}
     return templates.TemplateResponse(request, "listing.html", {
         "listing": row, "k": k, "version": version, "claims": claims, "photos": photos,
         "slots": [(s, SLOT_PROMPTS[s]) for s in required_slots(claims)] or [(Slot.FRONT, SLOT_PROMPTS[Slot.FRONT])],
-        "check": check, "verdicts": verdicts, "stale": stale,
+        "check": check, "verdicts": verdicts, "stale": stale, "marks": marks,
         "reports": store.active_reports(listing_id), "types": list(ClaimType),
         "rows": range(CLAIM_ROWS)})
+
+
+def sam_marks(check, photos) -> dict[str, list[tuple[str, str]]]:
+    """SAM's boxes around observed damage, as CSS percentages over the seller's photo. Never on the public report."""
+    from PIL import Image
+    marks = {}
+    for o in json.loads(check["observations"]):
+        boxes = [(d["kind"], d["box"]) for d in o["defects"] if d.get("box")]
+        if boxes and o["slot"] in photos:
+            with Image.open(io.BytesIO(store.photo_bytes(photos[o["slot"]]["sha256"]))) as im:
+                w, h = im.size  # boxes are in the stored (already prepared) photo's pixels
+            marks[o["slot"]] = [(kind, f"left:{x0 / w:.2%};top:{y0 / h:.2%};"
+                                       f"width:{(x1 - x0) / w:.2%};height:{(y1 - y0) / h:.2%}")
+                                for kind, (x0, y0, x1, y1) in boxes]
+    return marks
 
 
 @app.get("/l/{listing_id}/photo/{photo_id}")
