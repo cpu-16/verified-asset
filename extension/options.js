@@ -3,7 +3,7 @@
   "use strict";
 
   var REQUIRED = {
-    "https://verified.ciberpty.com/*": true,
+    "https://verified.adwentech.com/*": true,
   };
   var form = document.querySelector("#settings");
   var input = document.querySelector("#base");

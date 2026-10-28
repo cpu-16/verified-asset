@@ -1,6 +1,6 @@
 # Verified Asset for Marketplace
 
-A Chrome and Brave extension (Manifest V3, plain JavaScript, no build step) that brings a [Verified Asset](https://verified.ciberpty.com) evidence report onto a Facebook Marketplace item page.
+A Chrome and Brave extension (Manifest V3, plain JavaScript, no build step) that brings a [Verified Asset](https://verified.adwentech.com) evidence report onto a Facebook Marketplace item page.
 
 It is an independent demo and is not affiliated with Meta. The panel says that on every listing.
 
@@ -12,7 +12,7 @@ If the description or a link contains `<base>/r/<token>`, it loads the public re
 
 If no report is there, the panel can copy a message that asks the seller to create one. **Create evidence report** opens `<base>/new` in a new tab with the title, the description (at most 2,000 characters), and the item URL.
 
-The toolbar icon opens the options page. The default server is `https://verified.ciberpty.com`. For a local demo, set `http://localhost:8000` and accept the site permission.
+The toolbar icon opens the options page. The default server is `https://verified.adwentech.com`. For a local demo, set `http://localhost:8000` and accept the site permission.
 
 ## Privacy
 

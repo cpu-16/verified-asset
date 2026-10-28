@@ -129,3 +129,13 @@ def test_seller_pages_need_the_key(client):
     listing_id, key = make_listing(c)
     assert c.get(f"/l/{listing_id}?k=nope").status_code == 404
     assert c.get(f"/l/{listing_id}?k={key}").status_code == 200
+
+
+def test_check_without_a_configured_model_fails_cleanly(client, monkeypatch):
+    main, c = client
+    monkeypatch.delenv("LOCAL_MODEL_URL", raising=False)
+    main.app.state.observer = None
+    listing_id, key = make_listing(c)
+    r = c.post(f"/l/{listing_id}/check?k={key}")
+    assert r.status_code == 200 and "no model is configured" in r.text
+    assert c.post(f"/l/{listing_id}/report?k={key}").status_code == 409

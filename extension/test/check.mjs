@@ -17,23 +17,23 @@ const context = createContext({
 });
 runInContext(readFileSync(resolve(root, "core.js"), "utf8"), context, { filename: "core.js" });
 const VA = context.VACore;
-const BASE = "https://verified.ciberpty.com";
+const BASE = "https://verified.adwentech.com";
 const TOKEN = "dGVzdC1yZXBvcnQtaWQx";
 const ITEM = "https://www.facebook.com/marketplace/item/123456789/";
 
 test("normalizes the base URL and rejects unsafe forms", () => {
-  assert.equal(VA.normalizeBase("https://verified.ciberpty.com/"), BASE);
+  assert.equal(VA.normalizeBase("https://verified.adwentech.com/"), BASE);
   assert.equal(VA.normalizeBase("http://localhost:8000"), "http://localhost:8000");
   assert.equal(VA.normalizeBase("https://example.com/demo/"), "https://example.com/demo");
   assert.throws(() => VA.normalizeBase("javascript:alert(1)"));
-  assert.throws(() => VA.normalizeBase("https://user:pass@verified.ciberpty.com"));
-  assert.throws(() => VA.normalizeBase("https://verified.ciberpty.com/?q=1"));
+  assert.throws(() => VA.normalizeBase("https://user:pass@verified.adwentech.com"));
+  assert.throws(() => VA.normalizeBase("https://verified.adwentech.com/?q=1"));
 });
 
 test("permission patterns omit the port", () => {
   assert.equal(VA.permissionPattern("http://localhost:8000"), "http://localhost/*");
   assert.equal(VA.permissionPattern("http://127.0.0.1:8000/app"), "http://127.0.0.1/*");
-  assert.equal(VA.permissionPattern(BASE), "https://verified.ciberpty.com/*");
+  assert.equal(VA.permissionPattern(BASE), "https://verified.adwentech.com/*");
 });
 
 test("finds a urlsafe report token and ignores lookalikes", () => {

@@ -150,7 +150,12 @@ def run_check(listing_id: str, k: str):
     claims = store.claims_of(version)
     current = store.current_photos(listing_id)
     photos = [Photo(id=p["id"], slot=s, data=store.photo_bytes(p["sha256"])) for s, p in current.items()]
-    observer = get_observer()
+    try:
+        observer = get_observer()
+    except ValueError:  # no MODEL_API_KEY / LOCAL_MODEL_URL on this server
+        store.save_check(version["id"], {s: p["id"] for s, p in current.items()}, "none", False,
+                         "no model is configured on this server yet", [], [], 0)
+        return RedirectResponse(f"/l/{listing_id}?k={k}#check", status_code=303)
     started = time.monotonic()
     result = observer.observe(photos, count_subjects(claims))
     observations, verdicts = [], []

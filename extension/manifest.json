@@ -6,7 +6,7 @@
   "permissions": ["storage"],
   "host_permissions": [
     "https://www.facebook.com/*",
-    "https://verified.ciberpty.com/*"
+    "https://verified.adwentech.com/*"
   ],
   "optional_host_permissions": [
     "http://localhost/*",

@@ -3,7 +3,7 @@
 (function (root) {
   "use strict";
 
-  var DEFAULT_BASE = "https://verified.ciberpty.com";
+  var DEFAULT_BASE = "https://verified.adwentech.com";
   var TOKEN = "[A-Za-z0-9_-]{16,64}";
   var STATES = { active: 1, invalidated: 1, revoked: 1, expired: 1 };
 
