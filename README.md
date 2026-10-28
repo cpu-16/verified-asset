@@ -34,6 +34,8 @@ Local pickup is where second-hand deals go wrong: the "set of six" has four chai
 
 The seller writes their claims, takes the few photos those claims need with the listing's code written on paper, and gets a report link to paste into the listing. Buyers open it without signing up.
 
+On the [live site](https://verified.adwentech.com), **Try the sample** runs the whole seller flow on the dining set below. It replays recorded Muse Spark observations of those photos, so it needs no photos of your own and makes no API call. Change "Set of 4 chairs" to 6 and check again to see a contradiction.
+
 <p align="center">
   <img src="docs/media/walkthrough.gif" alt="Walkthrough: the seller writes claims, takes guided photos with a code on paper, Muse Spark observes and rules decide, the buyer opens the report, and editing the listing voids it." width="88%">
 </p>
