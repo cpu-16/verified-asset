@@ -10,6 +10,7 @@ import hashlib
 import json
 import secrets
 import sqlite3
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -67,12 +68,21 @@ class Store:
         self.data_dir = data_dir
         self.blobs = data_dir / "blobs"
         self.blobs.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(data_dir / "verified-asset.db", check_same_thread=False,
-                                  isolation_level=None)  # autocommit; explicit BEGIN for multi-step writes
-        self.db.row_factory = sqlite3.Row
+        self._local = threading.local()
         self.db.execute("PRAGMA journal_mode=WAL")
-        self.db.execute("PRAGMA foreign_keys=ON")
         self.db.executescript(SCHEMA)
+
+    @property
+    def db(self) -> sqlite3.Connection:
+        """One connection per thread: the server's worker threads must never share one."""
+        conn = getattr(self._local, "conn", None)
+        if conn is None:
+            conn = sqlite3.connect(self.data_dir / "verified-asset.db", timeout=10,
+                                   isolation_level=None)  # autocommit; explicit BEGIN for multi-step writes
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA foreign_keys=ON")
+            self._local.conn = conn
+        return conn
 
     def cached(self, key: list, call):
         """Persist successful results; concurrent misses share one call."""
