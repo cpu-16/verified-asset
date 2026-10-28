@@ -1,0 +1,20 @@
+[Unit]
+Description=Verified Asset web app
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=va
+WorkingDirectory=/opt/verified-asset/app
+Environment=DATA_DIR=/var/lib/verified-asset
+Environment=UV_CACHE_DIR=/opt/verified-asset/.cache/uv
+EnvironmentFile=-/etc/verified-asset.env
+ExecStart=/usr/local/bin/uv run --frozen --no-dev uvicorn app.main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips 127.0.0.1
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/verified-asset /opt/verified-asset
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
