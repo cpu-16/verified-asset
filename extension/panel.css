@@ -1,0 +1,365 @@
+/* Inspection-slip palette. Variables live on the shadow host and on the options page. */
+:host,
+.va-page {
+  color-scheme: light dark;
+  --paper: #f3f6f4;
+  --ink: #1c2822;
+  --muted: #3e4f47;
+  --line: #d3ddd6;
+  --mark: #1f6b45;
+  --paper-raised: #ffffff;
+  --supported: #0f6b3c;
+  --supported-bg: #e5f5ec;
+  --contradicted: #9d1c1c;
+  --contradicted-bg: #fdeaea;
+  --inconclusive: #8a5608;
+  --inconclusive-bg: #fbf1dc;
+  --neutral: #3e4f47;
+  --neutral-bg: #e7eeea;
+  --banner-bg: #f4efe2;
+  --banner-ink: #5c4810;
+  --shadow: 0 16px 40px rgba(20, 32, 26, 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :host,
+  .va-page {
+    --paper: #141b18;
+    --ink: #e7eee9;
+    --muted: #c5d4cc;
+    --line: #2c3a34;
+    --mark: #8fd9ae;
+    --paper-raised: #1b2420;
+    --supported: #b7ebcd;
+    --supported-bg: #173528;
+    --contradicted: #ffc7c7;
+    --contradicted-bg: #3c1c1c;
+    --inconclusive: #f6ddaa;
+    --inconclusive-bg: #332812;
+    --neutral: #d5e0da;
+    --neutral-bg: #24302b;
+    --banner-bg: #2c281c;
+    --banner-ink: #f3e6c4;
+    --shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  }
+}
+
+.va-panel {
+  all: initial;
+  display: block;
+  box-sizing: border-box;
+  max-height: min(72vh, 560px);
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font: 13px/1.45 ui-sans-serif, "Segoe UI", sans-serif;
+  text-align: left;
+  letter-spacing: normal;
+}
+
+.va-panel *,
+.va-panel *::before,
+.va-panel *::after {
+  box-sizing: border-box;
+}
+
+.va-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 12px 12px 8px;
+  background: var(--paper);
+}
+
+.va-brand {
+  flex: 1;
+  min-width: 0;
+}
+
+.va-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.va-disclaimer {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.va-hide,
+.va-btn,
+.va-textbtn {
+  font: inherit;
+  cursor: pointer;
+}
+
+.va-hide {
+  flex: none;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-raised);
+  color: var(--ink);
+}
+
+.va-body {
+  padding: 0 12px 12px;
+}
+
+.va-listing {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.va-listing-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.va-price {
+  flex: none;
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.va-headline,
+.va-empty {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.va-meta,
+.va-detail,
+.va-note,
+.va-status {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.va-banner {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--banner-bg);
+  color: var(--banner-ink);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.va-row {
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.va-rowtop {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.va-claim {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.va-chip {
+  flex: none;
+  max-width: 46%;
+  padding: 2px 6px;
+  border: 1px solid var(--neutral);
+  background: var(--neutral-bg);
+  color: var(--neutral);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.va-chip-supported {
+  border-color: var(--supported);
+  background: var(--supported-bg);
+  color: var(--supported);
+}
+
+.va-chip-contradicted {
+  border-color: var(--contradicted);
+  background: var(--contradicted-bg);
+  color: var(--contradicted);
+}
+
+.va-chip-inconclusive {
+  border-color: var(--inconclusive);
+  background: var(--inconclusive-bg);
+  color: var(--inconclusive);
+}
+
+.va-detail {
+  margin: 4px 0 0;
+}
+
+.va-ask {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.va-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.va-btn,
+.va-link {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.va-btn {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 650;
+}
+
+.va-btn-secondary {
+  background: transparent;
+  color: var(--ink);
+}
+
+.va-link {
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.va-textbtn {
+  align-self: flex-start;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.va-message {
+  width: 100%;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-raised);
+  color: var(--ink);
+  font: 12px/1.4 ui-sans-serif, "Segoe UI", sans-serif;
+  resize: vertical;
+}
+
+.va-panel :focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.va-page {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.5 ui-sans-serif, "Segoe UI", sans-serif;
+}
+
+.va-settings {
+  max-width: 36rem;
+  margin: 0 auto;
+  padding: 48px 20px 64px;
+}
+
+.va-settings h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.va-settings .va-disclaimer {
+  font-size: 14px;
+}
+
+.va-settings p {
+  margin: 12px 0;
+}
+
+.va-settings label {
+  display: block;
+  margin-top: 20px;
+  font-weight: 650;
+}
+
+.va-settings input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-raised);
+  color: var(--ink);
+  font: inherit;
+}
+
+.va-hint {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.va-settings button {
+  margin-top: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--ink);
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--paper);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.va-settings button:focus-visible,
+.va-settings input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+#status:empty {
+  display: none;
+}

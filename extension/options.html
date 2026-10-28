@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Verified Asset settings</title>
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body class="va-page">
+    <main class="va-settings">
+      <h1>Verified Asset</h1>
+      <p class="va-disclaimer">Independent demo · not affiliated with Meta</p>
+      <p>
+        Set the server this browser should use for evidence reports. The extension reads a Marketplace
+        listing only on that tab. It does not send the listing unless you open "Create evidence report".
+      </p>
+      <form id="settings">
+        <label for="base">Base URL</label>
+        <input
+          id="base"
+          name="base"
+          type="url"
+          required
+          spellcheck="false"
+          autocomplete="off"
+          placeholder="https://verified.ciberpty.com"
+          value="https://verified.ciberpty.com"
+        />
+        <p class="va-hint">
+          The production default is https://verified.ciberpty.com. For a local server, use
+          http://localhost:8000. Saving a custom server asks Chrome or Brave for permission to contact
+          that host.
+        </p>
+        <button type="submit">Save</button>
+        <p id="status" role="status"></p>
+      </form>
+    </main>
+    <script src="core.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

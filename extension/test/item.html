@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" data-va-test="1" data-va-base="https://verified.ciberpty.com">
+  <head>
+    <meta charset="utf-8" />
+    <title>Oak writing desk fixture</title>
+    <!-- The suffix is intentional: the extractor should keep the listing title and drop the site name. -->
+    <meta property="og:title" content="Oak writing desk | Facebook Marketplace" />
+    <!-- Boilerplate meta description. The in-page Description block should win. -->
+    <meta property="og:description" content="Log in or sign up to view this Facebook Marketplace listing." />
+    <style>
+      body {
+        margin: 0;
+        font: 16px/1.45 sans-serif;
+        color: #17211c;
+        background: #f7f7f5;
+      }
+      main {
+        max-width: 40rem;
+        margin: 0 auto;
+        padding: 32px 16px 120px;
+      }
+      .listing-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: baseline;
+      }
+      h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+      .price {
+        font-size: 22px;
+      }
+      #how {
+        margin-top: 32px;
+        color: #3d4a43;
+        font-size: 14px;
+      }
+      #va-debug {
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body data-va-mock="mock-report.json">
+    <main>
+      <p>Local fixture for the Verified Asset extension. This is not Facebook.</p>
+      <div class="listing-head">
+        <!-- Different from og:title on purpose, so a real run proves which source was used. -->
+        <h1>Desk heading in the page</h1>
+        <span class="price">$180</span>
+      </div>
+      <section>
+        <span>Description</span>
+        <div id="desc" dir="auto">
+          Solid oak writing desk, about 120 cm wide. One drawer sticks slightly.
+        </div>
+      </section>
+      <p id="links">
+        <a href="https://example.com/r/abcdefghijklmnopqr">Unrelated report host</a>
+        <a href="https://verified.ciberpty.com/r/short">Token too short</a>
+      </p>
+      <!-- Longer than the real description, and it mentions a different price. Must not win. -->
+      <div dir="auto" id="decoy">
+        Great seller! Fast replies and careful packing. Asking $999 if you want delivery across
+        town. Great seller! Fast replies and careful packing. Asking $999 if you want delivery
+        across town. Great seller! Fast replies and careful packing.
+      </div>
+      <footer>Local pickup only. Boxes cost $5.</footer>
+      <section id="how">
+        <h2>How to test without Facebook</h2>
+        <p>
+          From the <code>extension</code> folder, run <code>python3 -m http.server 8765</code> and open
+          <code>http://127.0.0.1:8765/test/item.html?mock=1</code>. The script on this page is the same
+          <code>content.js</code> the extension injects. <code>?mock=1</code> loads
+          <code>mock-report.json</code> instead of the network. Add <code>&amp;state=expired</code>,
+          <code>&amp;noreport=1</code>, <code>&amp;notitlemeta=1</code>, or <code>&amp;fail=1</code> to
+          exercise the other panel states. <code>node test/check.mjs</code> runs these checks.
+        </p>
+        <pre id="va-debug"></pre>
+      </section>
+    </main>
+    <script>
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var base = (params.get("base") || "https://verified.ciberpty.com").replace(/\/$/, "");
+        document.documentElement.dataset.vaBase = base;
+        if (params.has("notitlemeta")) {
+          var meta = document.querySelector('meta[property="og:title"]');
+          if (meta) meta.remove();
+        }
+        if (params.has("noreport")) return;
+        var token = "dGVzdC1yZXBvcnQtaWQx";
+        var url = base + "/r/" + token;
+        var desc = document.getElementById("desc");
+        desc.appendChild(document.createTextNode(" Evidence report: "));
+        var link = document.createElement("a");
+        link.href = url;
+        link.textContent = url;
+        desc.appendChild(link);
+        var wrapped = document.createElement("a");
+        wrapped.href = "https://l.facebook.com/l.php?u=" + encodeURIComponent(url);
+        wrapped.textContent = "Seller link";
+        document.getElementById("links").appendChild(wrapped);
+      })();
+    </script>
+    <script src="../core.js"></script>
+    <script src="../content.js"></script>
+    <script>
+      (function () {
+        var which = new URLSearchParams(location.search).get("click");
+        if (!which) return;
+        var timer = setInterval(function () {
+          var host = document.getElementById("verified-asset-root");
+          var root = host && host.shadowRoot;
+          if (!root) return;
+          var button = root.querySelector(which === "hide" ? ".va-hide" : ".va-copy");
+          if (!button) return;
+          clearInterval(timer);
+          button.click();
+        }, 20);
+      })();
+    </script>
+  </body>
+</html>
