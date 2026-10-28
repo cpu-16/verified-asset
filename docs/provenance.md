@@ -6,9 +6,7 @@ it does not certify eligibility or establish the organizer's official start time
 
 ## Fixed boundary
 
-- Branch: `codex/hackathon-2026`.
-- Original checkout: `codex/claim-review-prompt` at
-  `a797d53b4509b57e68ee6136214a2f29a4a33e51` (October 21).
+- Original checkout: `a797d53b4509b57e68ee6136214a2f29a4a33e51` (October 21).
 - Excluded baseline: `c9ba36a1fea920df60ae00327e283cb20b0ca8e4`.
 - Annotated tag: `hackathon-baseline-2026-10-26`.
 - Baseline commit time: `2026-10-26T12:42:42-05:00` (America/Bogota).
@@ -29,7 +27,7 @@ when it was written; the baseline above subsequently committed it unchanged.
 | Material | Existing before this boundary |
 | --- | --- |
 | October 21 prototype | Python listing review and validation, guided-checklist helper, prompts, three learning notebooks, offline tests and experiment notes |
-| October 22 learning branch | PyTorch notebook/setup and intent-check documentation on `codex/pytorch-learning`, ending at `a280467b094b32db838be27722a9a3c8e2cd7097`; not imported into this branch |
+| October 22 learning branch | PyTorch notebook/setup and intent-check documentation on a separate branch ending at `a280467b094b32db838be27722a9a3c8e2cd7097`; not imported into this branch |
 | October 26 planning | Seller-first production decisions, research, handoffs, project instructions, historical proposal and documentation annotations |
 
 Using or modifying these components later does not make the original components
