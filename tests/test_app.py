@@ -1,0 +1,119 @@
+"""End-to-end seller -> report -> edit -> invalidation, with a fake observer (no network)."""
+import importlib
+import io
+import re
+
+import pytest
+from fastapi.testclient import TestClient
+from PIL import Image
+
+from app.observation import CheckResult, Count, PhotoObservation
+
+
+class FakeObserver:
+    name = "fake observer"
+
+    def __init__(self, ok=True, colors=("white",), chairs=4, code="", seen_nouns=None):
+        self.ok, self.colors, self.chairs, self.code = ok, colors, chairs, code
+        self.seen_nouns = seen_nouns if seen_nouns is not None else []
+
+    def observe(self, photos, count_nouns):
+        self.seen_nouns.append(list(count_nouns))
+        if not self.ok:
+            return CheckResult(self.name, ok=False, error="timeout")
+        return CheckResult(self.name, ok=True, observations=[
+            PhotoObservation(photo_id=p.id, slot=p.slot, usable=True, item="dining set",
+                             dominant_colors=self.colors,
+                             counts=(Count("chair", self.chairs, True),),
+                             visible_text=(self.code,) if p.slot == "front" and self.code else ())
+            for p in photos])
+
+
+@pytest.fixture
+def client(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.delenv("MODEL_API_KEY", raising=False)
+    import app.main as main
+    main = importlib.reload(main)
+    main.app.state.sam = None
+    return main, TestClient(main.app)
+
+
+def jpeg():
+    buf = io.BytesIO()
+    Image.new("RGB", (64, 48), "white").save(buf, "JPEG")
+    return buf.getvalue()
+
+
+def make_listing(c):
+    r = c.post("/new", data={"title": "Dining set", "description": "Table and 4 chairs",
+                             "type0": "piece_count", "text0": "4 chairs", "subject0": "chair", "value0": "4",
+                             "type1": "color", "text1": "White", "value1": "white",
+                             "type2": "uncheckable", "text2": "Very strong wood"}, follow_redirects=False)
+    assert r.status_code == 303
+    path = r.headers["location"]
+    listing_id, key = re.match(r"/l/([^?]+)\?k=(.+)", path).groups()
+    for slot in ("front", "side"):
+        c.post(f"/l/{listing_id}/photo?k={key}", data={"slot": slot},
+               files={"file": ("p.jpg", jpeg(), "image/jpeg")})
+    return listing_id, key
+
+
+def test_full_lifecycle(client):
+    main, c = client
+    seen = []
+    main.app.state.observer = FakeObserver(code="", seen_nouns=seen)
+    listing_id, key = make_listing(c)
+    c.post(f"/l/{listing_id}/check?k={key}")
+    assert seen == [["chair"]]  # the observer gets nouns to count, never "4" or "white"
+
+    r = c.post(f"/l/{listing_id}/report?k={key}", follow_redirects=False)
+    token = r.headers["location"].rsplit("/", 1)[1]
+    api = c.get(f"/api/r/{token}").json()
+    assert api["state"] == "active"
+    assert [v["status"] for v in api["verdicts"]] == ["supported", "supported", "inconclusive"]
+    assert "Report SHA-256" in c.get(f"/r/{token}").text
+
+    # editing the listing kills the old link, which then shows only its state
+    c.post(f"/l/{listing_id}/edit?k={key}", data={"title": "Dining set", "type0": "color",
+                                                   "text0": "Black", "value0": "black"})
+    old = c.get(f"/api/r/{token}").json()
+    assert old["state"] == "invalidated" and "verdicts" not in old
+
+
+def test_failed_check_never_produces_a_report(client):
+    main, c = client
+    main.app.state.observer = FakeObserver(ok=False)
+    listing_id, key = make_listing(c)
+    c.post(f"/l/{listing_id}/check?k={key}")
+    assert c.post(f"/l/{listing_id}/report?k={key}").status_code == 409
+
+
+def test_retake_after_check_requires_a_new_check(client):
+    main, c = client
+    main.app.state.observer = FakeObserver()
+    listing_id, key = make_listing(c)
+    c.post(f"/l/{listing_id}/check?k={key}")
+    c.post(f"/l/{listing_id}/photo?k={key}", data={"slot": "front"},
+           files={"file": ("p.jpg", jpeg(), "image/jpeg")})
+    assert c.post(f"/l/{listing_id}/report?k={key}").status_code == 409
+
+
+def test_capture_code_and_revoke(client):
+    main, c = client
+    listing_id, key = make_listing(c)
+    code = main.store.listing(listing_id)["capture_code"]
+    main.app.state.observer = FakeObserver(code=code)
+    c.post(f"/l/{listing_id}/check?k={key}")
+    token = c.post(f"/l/{listing_id}/report?k={key}", follow_redirects=False).headers["location"].rsplit("/", 1)[1]
+    assert "capture code is visible" in c.get(f"/r/{token}").text
+    assert c.post(f"/r/{token}/revoke?k=wrong").status_code == 404
+    c.post(f"/r/{token}/revoke?k={key}")
+    assert c.get(f"/api/r/{token}").json()["state"] == "revoked"
+
+
+def test_seller_pages_need_the_key(client):
+    main, c = client
+    listing_id, key = make_listing(c)
+    assert c.get(f"/l/{listing_id}?k=nope").status_code == 404
+    assert c.get(f"/l/{listing_id}?k={key}").status_code == 200

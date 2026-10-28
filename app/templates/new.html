@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block main %}
+<h1>Your listing</h1>
+<form method="post" action="/new" class="card">
+  <label>Title <input name="title" value="{{ title }}" required maxlength="200"></label>
+  <p><label>Description <textarea name="description" rows="4" maxlength="2000">{{ description }}</textarea></label></p>
+  <input type="hidden" name="source" value="{{ source }}">
+  <h2>Your claims</h2>
+  {% include "_claim_rows.html" %}
+  <p><button>Continue to photos</button></p>
+</form>
+{% endblock %}

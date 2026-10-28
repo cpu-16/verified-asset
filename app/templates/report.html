@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ payload.title }} · Verified Asset report{% endblock %}
+{% block head %}
+<meta property="og:title" content="Evidence report: {{ payload.title }}">
+<meta property="og:description" content="{% if state == 'active' %}{{ summary.supported }} supported · {{ summary.contradicted }} contradicted · {{ summary.inconclusive }} inconclusive, as photographed.{% else %}This report is {{ state }}.{% endif %}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ url }}">
+{% endblock %}
+{% block main %}
+<p class="muted">Evidence report</p>
+<h1>{{ payload.title }}</h1>
+{% if state != "active" %}
+  <p class="state contradicted">This report is {{ state }}. It no longer vouches for this listing.</p>
+{% else %}
+  <p><span class="chip supported">{{ summary.supported }} supported</span>
+     <span class="chip contradicted">{{ summary.contradicted }} contradicted</span>
+     <span class="chip inconclusive">{{ summary.inconclusive }} inconclusive</span></p>
+  <div class="card">
+  {% for c in payload.claims %}
+    <div class="claim">
+      <span class="chip {{ c.verdict.status }}">{{ c.verdict.status }}</span>
+      <div><b>{{ c.text }}</b><br><span class="muted">{{ c.verdict.detail }}</span>
+        {% if c.verdict.request %}<br>Ask the seller for: {{ c.verdict.request }}{% endif %}</div>
+    </div>
+  {% endfor %}
+  </div>
+  {% if payload.fresh_capture_photo_ids %}<p>✓ The listing's one-time capture code is visible in the checked photos.</p>
+  {% else %}<p class="muted">The one-time capture code was not seen, so these photos could be older or taken elsewhere.</p>{% endif %}
+  <p class="muted">{{ payload.limits }}</p>
+  <div class="card mono">
+    Issued {{ payload.issued_at }} · expires {{ payload.expires_at }}<br>
+    Listing version {{ payload.listing_version }} · rules {{ payload.rules_version }} · observer {{ payload.observer }}<br>
+    Report SHA-256 {{ digest }}<br>
+    {% for slot, sha in payload.photos.items() %}{{ slot }} photo SHA-256 {{ sha }}<br>{% endfor %}
+  </div>
+{% endif %}
+{% endblock %}
