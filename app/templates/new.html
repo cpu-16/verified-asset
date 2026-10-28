@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block main %}
-<h1>Your listing</h1>
-<form method="post" action="/new" class="card">
-  <label>Title <input name="title" value="{{ title }}" required maxlength="200"></label>
+<h1>Describe your item</h1>
+<p class="lede">Write what you'd tell a buyer. Next you'll take the photos that back it up.</p>
+<form method="post" action="/new" class="sheet">
+  <label>Title <input name="title" value="{{ title }}" required maxlength="200" placeholder="Oak dining set with 4 chairs"></label>
   <p><label>Description <textarea name="description" rows="4" maxlength="2000">{{ description }}</textarea></label></p>
   <input type="hidden" name="source" value="{{ source }}">
   <h2>Your claims</h2>

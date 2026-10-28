@@ -2,36 +2,64 @@
 {% block title %}{{ payload.title }} · Verified Asset report{% endblock %}
 {% block head %}
 <meta property="og:title" content="Evidence report: {{ payload.title }}">
-<meta property="og:description" content="{% if state == 'active' %}{{ summary.supported }} supported · {{ summary.contradicted }} contradicted · {{ summary.inconclusive }} inconclusive, as photographed.{% else %}This report is {{ state }}.{% endif %}">
+<meta property="og:description" content="{% if state == 'active' %}{{ summary.supported }} supported, {{ summary.contradicted }} contradicted, {{ summary.inconclusive }} can't be checked from photos.{% else %}This report is {{ state }}.{% endif %}">
 <meta property="og:type" content="article">
 <meta property="og:url" content="{{ url }}">
 {% endblock %}
 {% block main %}
-<p class="muted">Evidence report</p>
+<p class="soft">Evidence report for</p>
 <h1>{{ payload.title }}</h1>
+
 {% if state != "active" %}
-  <p class="state contradicted">This report is {{ state }}. It no longer vouches for this listing.</p>
+<section class="stamp void">
+  <h2>{{ {"invalidated": "No longer valid", "revoked": "Withdrawn", "expired": "Expired"}[state] }}</h2>
+  <p>{{ {"invalidated": "The seller changed the listing after this report was issued, so it no longer vouches for it.",
+         "revoked": "The seller withdrew this report.",
+         "expired": "Reports are valid for 30 days. This one ended on " ~ (payload.expires_at|day) ~ "."}[state] }}
+  Ask the seller for a new report.</p>
+</section>
 {% else %}
-  <p><span class="chip supported">{{ summary.supported }} supported</span>
-     <span class="chip contradicted">{{ summary.contradicted }} contradicted</span>
-     <span class="chip inconclusive">{{ summary.inconclusive }} inconclusive</span></p>
-  <div class="card">
-  {% for c in payload.claims %}
-    <div class="claim">
-      <span class="chip {{ c.verdict.status }}">{{ c.verdict.status }}</span>
-      <div><b>{{ c.text }}</b><br><span class="muted">{{ c.verdict.detail }}</span>
-        {% if c.verdict.request %}<br>Ask the seller for: {{ c.verdict.request }}{% endif %}</div>
+<section class="stamp" aria-label="Report status">
+  <h2>Valid until {{ payload.expires_at|day }}</h2>
+  {% if payload.capture_code %}
+  <p>Photographed for this listing. The seller's one-time code was on paper in the photos, so they weren't taken from somewhere else.</p>
+  <span class="slip" aria-label="Capture code {{ payload.capture_code }}">{{ payload.capture_code }}</span>
+  {% else %}
+  <p>The seller's one-time code wasn't visible, so these photos could be older or taken elsewhere.</p>
+  {% endif %}
+</section>
+
+<h2>What the photos show</h2>
+<p class="tally">
+  {% if summary.contradicted %}<span><b>{{ summary.contradicted }}</b> contradicted</span>{% endif %}
+  <span><b>{{ summary.supported }}</b> supported</span>
+  <span><b>{{ summary.inconclusive }}</b> can't be checked from photos</span>
+</p>
+<div class="sheet">
+<ul class="verdicts">
+{% for status in ["contradicted", "supported", "inconclusive"] %}{% for c in payload.claims if c.verdict.status == status %}
+  <li class="verdict {{ status }}">
+    <span class="mark">{{ status|capitalize }}</span>
+    <div>
+      <p class="claim">{{ c.text }}</p>
+      <p class="why">{{ c.verdict.detail }}</p>
+      {% if c.verdict.request %}<p class="ask">Ask the seller for {{ c.verdict.request }}.</p>{% endif %}
     </div>
-  {% endfor %}
-  </div>
-  {% if payload.fresh_capture_photo_ids %}<p>✓ The listing's one-time capture code is visible in the checked photos.</p>
-  {% else %}<p class="muted">The one-time capture code was not seen, so these photos could be older or taken elsewhere.</p>{% endif %}
-  <p class="muted">{{ payload.limits }}</p>
-  <div class="card mono">
-    Issued {{ payload.issued_at }} · expires {{ payload.expires_at }}<br>
-    Listing version {{ payload.listing_version }} · rules {{ payload.rules_version }} · observer {{ payload.observer }}<br>
-    Report SHA-256 {{ digest }}<br>
-    {% for slot, sha in payload.photos.items() %}{{ slot }} photo SHA-256 {{ sha }}<br>{% endfor %}
-  </div>
+  </li>
+{% endfor %}{% endfor %}
+</ul>
+</div>
+
+<h2>What this report can't tell you</h2>
+<p>{{ payload.limits }} Issued {{ payload.issued_at|day }}.</p>
+
+<details class="sheet">
+  <summary>Check that this report hasn't been altered</summary>
+  <p class="soft">The fingerprint below is computed from everything in this report. Any change to it, or to the photos
+  it was checked against, gives a different fingerprint.</p>
+  <p class="mono">Report fingerprint (SHA-256)<br>{{ digest }}</p>
+  {% for slot, sha in payload.photos.items() %}<p class="mono">{{ slot|capitalize }} photo<br>{{ sha }}</p>{% endfor %}
+  <p class="mono">Listing version {{ payload.listing_version }}, rules {{ payload.rules_version }}, observer {{ payload.observer }}</p>
+</details>
 {% endif %}
 {% endblock %}

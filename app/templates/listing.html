@@ -1,58 +1,76 @@
 {% extends "base.html" %}
 {% block main %}
-<p class="muted">Version {{ version.version }} · keep this page's link private: it lets you edit and issue reports.</p>
+<p class="alert wait">Keep this page's link to yourself. Anyone with it can edit your listing and issue reports.</p>
+<p class="soft">Version {{ version.version }}</p>
 <h1>{{ version.title }}</h1>
 
-<div class="card">
-  <b>Capture code</b>
-  <p>Write this code on a piece of paper and keep it visible in the front photo. It shows the photos were taken
-  for this listing, not downloaded.</p>
-  <div class="code">{{ listing.capture_code }}</div>
-</div>
+<ol class="steps">
+<li class="step{% if photos %} done{% endif %}">
+  <h3>Write this code on a piece of paper</h3>
+  <p>Put it next to the item in the front photo. It shows buyers the photos were taken today, for this listing.</p>
+  <section class="stamp"><p>Your one-time code</p><span class="slip">{{ listing.capture_code }}</span></section>
+</li>
 
-<h2 id="photos">Photos</h2>
-<div class="slots">
-{% for slot, prompt in slots %}
-  <form class="card" method="post" action="/l/{{ listing.id }}/photo?k={{ k }}" enctype="multipart/form-data">
-    <b>{{ slot|capitalize }}</b>
-    <p class="muted">{{ prompt }}</p>
-    {% if photos.get(slot) %}<img src="/l/{{ listing.id }}/photo/{{ photos[slot].id }}?k={{ k }}" alt="{{ slot }} photo">{% endif %}
-    <input type="hidden" name="slot" value="{{ slot }}">
-    <input type="file" name="file" accept="image/*" capture="environment" required>
-    <p><button class="secondary">{{ "Retake" if photos.get(slot) else "Upload" }}</button></p>
-  </form>
-{% endfor %}
-</div>
-
-<h2 id="check">Check</h2>
-<form method="post" action="/l/{{ listing.id }}/check?k={{ k }}"><button>Run check</button></form>
-{% if check and not check.ok %}<p class="state contradicted">The check failed ({{ check.error }}). No verdicts were recorded; try again.</p>{% endif %}
-{% if stale %}<p class="state inconclusive">Photos changed since the last check. Run it again before issuing a report.</p>{% endif %}
-<div class="card">
-{% for c in claims %}{% set v = verdicts.get(c.id) %}
-  <div class="claim">
-    <span class="chip {{ v.status if v else '' }}">{{ v.status if v else "not checked" }}</span>
-    <div><b>{{ c.text }}</b>{% if v %}<br><span class="muted">{{ v.detail }}</span>
-      {% if v.request %}<br>→ {{ v.request }}{% endif %}{% endif %}</div>
+<li class="step{% if photos|length >= slots|length %} done{% endif %}" id="photos">
+  <h3>Take the photos</h3>
+  <p class="soft">We only ask for the photos your claims need.</p>
+  <div class="slots">
+  {% for slot, prompt in slots %}
+    <form class="sheet" method="post" action="/l/{{ listing.id }}/photo?k={{ k }}" enctype="multipart/form-data">
+      <b>{{ slot|capitalize }}</b>
+      <p class="soft">{{ prompt }}</p>
+      {% if photos.get(slot) %}<img src="/l/{{ listing.id }}/photo/{{ photos[slot].id }}?k={{ k }}" alt="Your {{ slot }} photo">{% endif %}
+      <input type="hidden" name="slot" value="{{ slot }}">
+      <input type="file" name="file" accept="image/*" capture="environment" required aria-label="{{ slot|capitalize }} photo">
+      <p><button>{{ "Replace photo" if photos.get(slot) else "Add photo" }}</button></p>
+    </form>
+  {% endfor %}
   </div>
-{% endfor %}
-{% if check and check.ok %}<p class="muted mono">Observer: {{ check.observer }} · {{ check.latency_ms }} ms</p>{% endif %}
-</div>
-{% if check and check.ok and not stale %}
-<form method="post" action="/l/{{ listing.id }}/report?k={{ k }}"><button>Issue report</button></form>
-{% endif %}
+</li>
 
-{% if reports %}<h2>Active reports</h2>
-{% for r in reports %}<div class="card"><a href="/r/{{ r.token }}">/r/{{ r.token }}</a>
-  <form method="post" action="/r/{{ r.token }}/revoke?k={{ k }}"><button class="secondary">Revoke</button></form></div>{% endfor %}
-{% endif %}
+<li class="step{% if check and check.ok and not stale %} done{% endif %}" id="check">
+  <h3>Check your claims</h3>
+  <p class="soft">The model describes your photos without seeing your claims. Fixed rules then compare.</p>
+  {% if check and not check.ok %}<p class="alert bad">The check didn't finish ({{ check.error }}). Nothing was recorded. Run it again.</p>{% endif %}
+  {% if stale %}<p class="alert wait">Your photos changed after the last check. Run it again before sharing a report.</p>{% endif %}
+  <div class="sheet">
+  <ul class="verdicts">
+  {% for c in claims %}{% set v = verdicts.get(c.id) %}
+    <li class="verdict {{ v.status if v else 'unchecked' }}">
+      <span class="mark">{{ v.status|capitalize if v else "Not checked" }}</span>
+      <div><p class="claim">{{ c.text }}</p>
+        {% if v %}<p class="why">{{ v.detail }}</p>{% if v.request %}<p class="ask">To settle it: {{ v.request }}.</p>{% endif %}{% endif %}</div>
+    </li>
+  {% endfor %}
+  </ul>
+  </div>
+  <form method="post" action="/l/{{ listing.id }}/check?k={{ k }}"><button>{{ "Check again" if check else "Check my claims" }}</button></form>
+  {% if check and check.ok %}<p class="mono soft">{{ check.observer }}, {{ check.latency_ms }} ms</p>{% endif %}
+</li>
 
-<h2>Edit listing</h2>
-<form method="post" action="/l/{{ listing.id }}/edit?k={{ k }}" class="card">
-  <p class="muted">Saving creates version {{ version.version + 1 }} and invalidates every active report.</p>
-  <label>Title <input name="title" value="{{ version.title }}" required></label>
-  <p><label>Description <textarea name="description" rows="3">{{ version.description }}</textarea></label></p>
-  {% include "_claim_rows.html" %}
-  <p><button class="secondary">Save new version</button></p>
-</form>
+<li class="step{% if reports %} done{% endif %}">
+  <h3>Share the report</h3>
+  {% if check and check.ok and not stale %}
+  <p>Paste the report link in your listing's description. Buyers see each claim and its result.</p>
+  <form method="post" action="/l/{{ listing.id }}/report?k={{ k }}"><button>Create report link</button></form>
+  {% else %}<p class="soft">Available after a successful check.</p>{% endif %}
+  {% for r in reports %}
+  <div class="sheet">
+    <p><a href="/r/{{ r.token }}">{{ request.base_url }}r/{{ r.token }}</a></p>
+    <form method="post" action="/r/{{ r.token }}/revoke?k={{ k }}"><button class="quiet">Withdraw this report</button></form>
+  </div>
+  {% endfor %}
+</li>
+</ol>
+
+<details class="sheet">
+  <summary>Edit the listing</summary>
+  <form method="post" action="/l/{{ listing.id }}/edit?k={{ k }}">
+    <p class="soft">Saving creates version {{ version.version + 1 }}. Every report you shared stops being valid, so buyers never see claims you changed.</p>
+    <label>Title <input name="title" value="{{ version.title }}" required></label>
+    <p><label>Description <textarea name="description" rows="3">{{ version.description }}</textarea></label></p>
+    {% include "_claim_rows.html" %}
+    <p><button class="quiet">Save version {{ version.version + 1 }}</button></p>
+  </form>
+</details>
 {% endblock %}

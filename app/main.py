@@ -29,6 +29,7 @@ app = FastAPI(title="Verified Asset")
 app.add_middleware(CORSMiddleware, allow_origins=["https://www.facebook.com"],
                    allow_methods=["GET"])  # the browser extension reads /api/r/* from Marketplace
 templates = Jinja2Templates(directory=BASE / "templates")
+templates.env.filters["day"] = lambda iso: datetime.fromisoformat(iso).strftime("%-d %b %Y")
 store = Store(DATA)
 
 
@@ -189,7 +190,7 @@ def issue(listing_id: str, k: str):
         description=version["description"], claims=store.claims_of(version), verdicts=verdicts,
         photos={s: current[s]["sha256"] for s in checked}, check_id=check["id"],
         observer=check["observer"], issued_at=datetime.now(timezone.utc),
-        fresh_photo_ids=capture_code_seen(row["capture_code"], obs))
+        fresh_photo_ids=capture_code_seen(row["capture_code"], obs), capture_code=row["capture_code"])
     token = store.issue_report(listing_id, version["id"], check["id"], payload, reports.digest(payload))
     return RedirectResponse(f"/r/{token}", status_code=303)
 

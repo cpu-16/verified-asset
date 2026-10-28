@@ -72,7 +72,7 @@ def test_full_lifecycle(client):
     api = c.get(f"/api/r/{token}").json()
     assert api["state"] == "active"
     assert [v["status"] for v in api["verdicts"]] == ["supported", "supported", "inconclusive"]
-    assert "Report SHA-256" in c.get(f"/r/{token}").text
+    assert "Report fingerprint (SHA-256)" in c.get(f"/r/{token}").text
 
     # editing the listing kills the old link, which then shows only its state
     c.post(f"/l/{listing_id}/edit?k={key}", data={"title": "Dining set", "type0": "color",
@@ -106,7 +106,8 @@ def test_capture_code_and_revoke(client):
     main.app.state.observer = FakeObserver(code=code)
     c.post(f"/l/{listing_id}/check?k={key}")
     token = c.post(f"/l/{listing_id}/report?k={key}", follow_redirects=False).headers["location"].rsplit("/", 1)[1]
-    assert "capture code is visible" in c.get(f"/r/{token}").text
+    page = c.get(f"/r/{token}").text
+    assert f'aria-label="Capture code {code}"' in page
     assert c.post(f"/r/{token}/revoke?k=wrong").status_code == 404
     c.post(f"/r/{token}/revoke?k={key}")
     assert c.get(f"/api/r/{token}").json()["state"] == "revoked"

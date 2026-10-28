@@ -6,42 +6,107 @@
 <title>{% block title %}Verified Asset{% endblock %}</title>
 {% block head %}{% endblock %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wdth,wght@75..100,400..700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-:root { --paper:#f6f2ea; --ink:#1d1b18; --muted:#6b645a; --line:#d8d0c2; --card:#fffdf8;
-  --ok:#1f7a4d; --ok-bg:#e3f2e8; --bad:#b3261e; --bad-bg:#fbe5e2; --maybe:#8a5a00; --maybe-bg:#fbefd3; }
-@media (prefers-color-scheme: dark) { :root { --paper:#16140f; --ink:#f1ece2; --muted:#a69d8f; --line:#3a352c;
-  --card:#1f1c16; --ok:#6fd39c; --ok-bg:#16301f; --bad:#ff8a80; --bad-bg:#3a1714; --maybe:#f2c46b; --maybe-bg:#3a2c0e; } }
+/* "Carbon copy": the seller's words are ink, everything the system stamps is carbon violet. */
+:root { color-scheme: light dark;
+  --page:#e9ecf1; --sheet:#ffffff; --ink:#1b2033; --soft:#596075; --rule:#d6dae3;
+  --carbon:#3a3db0; --on-carbon:#ffffff; --slip:#fffef6;
+  --yes:#14774a; --yes-bg:#e1f2e9; --no:#bf2a1f; --no-bg:#fce5e2; --maybe:#865d00; --maybe-bg:#fcf0d0; }
+@media (prefers-color-scheme: dark) { :root {
+  --page:#0e1017; --sheet:#171a25; --ink:#e6e8f0; --soft:#a1a7b9; --rule:#2b3041;
+  --carbon:#3537a0; --on-carbon:#ffffff; --slip:#f4f2e6;
+  --yes:#73d6a3; --yes-bg:#11301f; --no:#ff958b; --no-bg:#3a1613; --maybe:#f0c463; --maybe-bg:#372907; } }
 * { box-sizing: border-box; }
-body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.5 "IBM Plex Sans", system-ui, sans-serif; }
-main { max-width: 760px; margin: 0 auto; padding: 16px; }
-h1, h2 { font-family: Fraunces, Georgia, serif; line-height: 1.15; }
-h1 { font-size: 2rem; margin: .4em 0; } h2 { font-size: 1.35rem; margin: 1.6em 0 .5em; }
-.demo { background: var(--ink); color: var(--paper); font-size: .8rem; text-align: center; padding: 6px 12px; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin: 12px 0; }
-.muted { color: var(--muted); } .mono { font-family: "JetBrains Mono", monospace; font-size: .8rem; word-break: break-all; }
-.chip { display:inline-block; font-size:.75rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
-  padding: 2px 8px; border-radius: 99px; }
-.supported { color: var(--ok); background: var(--ok-bg); } .contradicted { color: var(--bad); background: var(--bad-bg); }
-.inconclusive { color: var(--maybe); background: var(--maybe-bg); }
-button, .button { font: inherit; font-weight: 600; background: var(--ink); color: var(--paper); border: 0;
-  border-radius: 8px; padding: 10px 16px; cursor: pointer; text-decoration: none; display: inline-block; }
-button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
-input, select, textarea { font: inherit; width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px;
-  background: var(--card); color: var(--ink); }
-.row { display: grid; grid-template-columns: 1.1fr 2fr 1fr .8fr; gap: 6px; margin: 6px 0; }
-@media (max-width: 600px) { .row { grid-template-columns: 1fr 1fr; } }
-.claim { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: start; padding: 10px 0;
-  border-top: 1px solid var(--line); }
-.claim:first-child { border-top: 0; }
-.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-.slots img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 6px; background: var(--line); }
-.code { font-family: "JetBrains Mono", monospace; font-size: 1.6rem; letter-spacing: .3em; }
-.state { padding: 12px 16px; border-radius: 10px; font-weight: 600; }
+body { margin: 0; background: var(--page); color: var(--ink);
+  font: 400 1rem/1.55 "Instrument Sans", system-ui, sans-serif; }
+main { max-width: 42em; margin: 0 auto; padding: 0 1rem 3rem; }
+h1, h2, h3 { font-stretch: 75%; font-weight: 700; line-height: 1.08; letter-spacing: -.005em; margin: 0; }
+h1 { font-size: clamp(2rem, 7vw, 2.75rem); }
+h2 { font-size: 1.5rem; margin: 2.25rem 0 .75rem; }
+h3 { font-size: 1.15rem; }
+p { margin: .5rem 0; }
+a { color: var(--carbon); }
+@media (prefers-color-scheme: dark) { a { color: #a9abff; } }
+:focus-visible { outline: 3px solid var(--carbon); outline-offset: 2px; }
+.soft { color: var(--soft); }
+.mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: .8rem; overflow-wrap: anywhere; }
+.notice { font-size: .85rem; color: var(--soft); padding: .6rem 0; }
+.lede { font-size: 1.1rem; max-width: 34em; }
+.sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 3px; padding: 1rem 1.1rem; margin: 1rem 0; }
+
+/* the one loud element: the system's stamp, with the seller's paper code clipped to it */
+.stamp { background: var(--carbon); color: var(--on-carbon); border-radius: 3px; padding: 1.1rem 1.1rem 1.25rem;
+  margin: 1.25rem 0; display: grid; grid-template-columns: 1fr auto; gap: .25rem 1rem; align-items: center; }
+.stamp h2 { margin: 0; font-size: 1.6rem; }
+.stamp p { margin: .25rem 0 0; }
+.stamp.void { background: var(--no-bg); color: var(--no); border: 2px solid var(--no); }
+.slip { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 1.9rem; letter-spacing: .18em;
+  background: var(--slip); color: #1b2033; padding: .35rem .5rem .35rem .7rem; transform: rotate(-2deg);
+  box-shadow: 0 1px 0 rgba(0,0,0,.25); justify-self: end; grid-column: 2; grid-row: 1 / span 3; }
+.stamp > :not(.slip) { grid-column: 1; }
+@media (prefers-reduced-motion: no-preference) { .stamp .slip { animation: settle .5s cubic-bezier(.2,.9,.3,1.2) both .15s; } }
+@keyframes settle { from { transform: rotate(-9deg) translateY(-6px); opacity: 0; } }
+@media (max-width: 30em) { .stamp { grid-template-columns: 1fr; } .slip { justify-self: start; grid-column: 1; grid-row: auto; margin-top: .5rem; } }
+
+/* verdicts: a mark in the margin, then the seller's words, then what the photos showed */
+.verdicts { list-style: none; padding: 0; margin: 0; }
+.verdict { display: grid; grid-template-columns: 7.5em 1fr; gap: .2rem 1rem; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.verdict:first-child { border-top: 0; padding-top: .2rem; }
+.mark { font-weight: 700; font-size: .9rem; align-self: start; padding: .1rem .5rem; border-radius: 2px; width: fit-content; }
+.mark::before { margin-right: .35em; }
+.supported .mark { color: var(--yes); background: var(--yes-bg); } .supported .mark::before { content: "✓"; }
+.contradicted .mark { color: var(--no); background: var(--no-bg); } .contradicted .mark::before { content: "✗"; }
+.inconclusive .mark { color: var(--maybe); background: var(--maybe-bg); } .inconclusive .mark::before { content: "?"; }
+.unchecked .mark { color: var(--soft); background: var(--page); }
+.claim { font-weight: 600; margin: 0; }
+.why { color: var(--soft); margin: .15rem 0 0; }
+.ask { margin: .35rem 0 0; }
+@media (max-width: 30em) { .verdict { grid-template-columns: 1fr; } }
+.tally { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; margin: .25rem 0 1rem; color: var(--soft); }
+.tally b { color: var(--ink); }
+
+button, .button { font: inherit; font-weight: 600; background: var(--ink); color: var(--sheet); border: 0;
+  border-radius: 3px; padding: .7rem 1.1rem; cursor: pointer; text-decoration: none; display: inline-block; }
+button.quiet { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+button:active, .button:active { transform: translateY(1px); }
+label { display: block; font-weight: 600; font-size: .9rem; }
+input, select, textarea { font: inherit; font-weight: 400; width: 100%; padding: .55rem .6rem; margin-top: .25rem;
+  border: 1px solid var(--rule); border-radius: 3px; background: var(--sheet); color: var(--ink); }
+details > summary { cursor: pointer; font-weight: 600; }
+input[type=file] { border: 0; padding: 0; background: none; }
+input[type=file]::file-selector-button { font: inherit; font-weight: 600; margin-right: .75rem; padding: .5rem .9rem;
+  border: 1px solid var(--ink); border-radius: 3px; background: var(--sheet); color: var(--ink); cursor: pointer; }
+
+/* seller flow */
+.steps { list-style: none; padding: 0; margin: 0; counter-reset: step; }
+.step { counter-increment: step; position: relative; padding-left: 2.6rem; margin: 2rem 0; }
+.step::before { content: counter(step); position: absolute; left: 0; top: -.1rem; width: 1.8rem; height: 1.8rem;
+  border-radius: 50%; border: 2px solid var(--ink); display: grid; place-items: center; font-weight: 700; font-size: .95rem; }
+.step.done::before { content: "✓"; background: var(--ink); color: var(--sheet); }
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(13em, 1fr)); gap: .75rem; }
+.slots form { margin: 0; }
+.slots img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 2px; background: var(--rule); display: block; margin: .5rem 0; }
+.alert { padding: .7rem .9rem; border-radius: 3px; font-weight: 600; }
+.alert.bad { color: var(--no); background: var(--no-bg); } .alert.wait { color: var(--maybe); background: var(--maybe-bg); }
+
+/* claim rows: the count and value fields only appear for the claim types that use them */
+.claim-row { display: grid; grid-template-columns: 11em 1fr; gap: .5rem; padding: .75rem 0; border-top: 1px solid var(--rule); }
+.claim-row .what, .claim-row .value { display: none; }
+.claim-row:has(option[value="piece_count"]:checked) { grid-template-columns: 11em 1fr 8em 5em; }
+.claim-row:has(option[value="piece_count"]:checked) :is(.what, .value),
+.claim-row:has(option[value="color"]:checked) .value { display: block; }
+.claim-row:has(option[value="color"]:checked) { grid-template-columns: 11em 1fr 8em; }
+@media (max-width: 40em) { .claim-row, .claim-row:has(option[value]:checked) { grid-template-columns: 1fr 1fr; }
+  .claim-row .text, .claim-row > label:first-child { grid-column: 1 / -1; }
+  .claim-row .text { order: -1; } }
 </style>
 </head>
 <body>
-<div class="demo">Hackathon demo · independent project, not affiliated with Meta or Facebook Marketplace</div>
-<main>{% block main %}{% endblock %}</main>
+<main>
+<p class="notice">Hackathon demo. An independent project, not affiliated with Meta or Facebook Marketplace.</p>
+{% block main %}{% endblock %}
+</main>
 </body>
 </html>

@@ -28,8 +28,8 @@ def digest(payload: dict) -> str:
 def build_payload(*, listing_id: str, version: int, title: str, description: str,
                   claims: list[Claim], verdicts: list[Verdict], photos: dict[str, str],
                   check_id: str, observer: str, issued_at: datetime,
-                  fresh_photo_ids: list[str] = ()) -> dict:
-    """`photos` maps slot -> sha256 of the checked photo."""
+                  fresh_photo_ids: list[str] = (), capture_code: str = "") -> dict:
+    """`photos` maps slot -> sha256 of the checked photo. `capture_code` only when it was seen."""
     by_id = {v.claim_id: v for v in verdicts}
     return {
         "listing_id": listing_id,
@@ -39,6 +39,7 @@ def build_payload(*, listing_id: str, version: int, title: str, description: str
         "claims": [{**c.to_dict(), "verdict": by_id[c.id].to_dict()} for c in claims],
         "photos": dict(sorted(photos.items())),
         "fresh_capture_photo_ids": list(fresh_photo_ids),
+        "capture_code": capture_code if fresh_photo_ids else "",
         "check_id": check_id,
         "observer": observer,
         "rules_version": RULES_VERSION,
