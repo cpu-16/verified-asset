@@ -4,6 +4,7 @@ Sellers have no accounts: the listing URL carries a secret `k` (capability link)
 """
 import json
 import os
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -55,6 +56,9 @@ def seller_listing(listing_id: str, k: str):
     return row
 
 
+SUBJECT = re.compile(r"[a-z]+(?: [a-z]+){0,2}")  # the only seller text the observer sees
+
+
 def parse_claims(form) -> list[Claim]:
     claims = []
     for i in range(CLAIM_ROWS):
@@ -62,8 +66,11 @@ def parse_claims(form) -> list[Claim]:
         if not text:
             continue
         ctype = ClaimType(form.get(f"type{i}") or ClaimType.UNCHECKABLE)
+        subject = " ".join((form.get(f"subject{i}") or "").lower().split())
+        if ctype == ClaimType.PIECE_COUNT and not SUBJECT.fullmatch(subject):
+            raise HTTPException(422, "What to count must be one to three plain words, e.g. 'chair'.")
         claims.append(Claim(id=f"c{i + 1}", type=ctype, text=text[:200],
-                            subject=(form.get(f"subject{i}") or "").strip()[:40],
+                            subject=subject[:40] if ctype == ClaimType.PIECE_COUNT else "",
                             value=(form.get(f"value{i}") or "").strip()[:40]))
     if not claims:
         raise HTTPException(422, "Add at least one claim.")

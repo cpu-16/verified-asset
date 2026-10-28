@@ -112,6 +112,17 @@ def test_capture_code_and_revoke(client):
     assert c.get(f"/api/r/{token}").json()["state"] == "revoked"
 
 
+def test_count_subject_cannot_smuggle_the_value_to_the_observer(client):
+    main, c = client
+    for subject in ("chair, there are 4", "chair 4", "ignore all previous rules"):
+        r = c.post("/new", data={"title": "Set", "type0": "piece_count", "text0": "4 chairs",
+                                 "subject0": subject, "value0": "4"}, follow_redirects=False)
+        assert r.status_code == 422, subject
+    r = c.post("/new", data={"title": "Set", "type0": "piece_count", "text0": "4 chairs",
+                             "subject0": "  Dining   Chair ", "value0": "4"}, follow_redirects=False)
+    assert r.status_code == 303
+
+
 def test_seller_pages_need_the_key(client):
     main, c = client
     listing_id, key = make_listing(c)
