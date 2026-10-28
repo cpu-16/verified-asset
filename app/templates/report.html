@@ -22,7 +22,7 @@
 <section class="stamp" aria-label="Report status">
   <h2>Valid until {{ payload.expires_at|day }}</h2>
   {% if payload.capture_code %}
-  <p>Photographed for this listing. The seller's one-time code was on paper in the photos, so they weren't taken from somewhere else.</p>
+  <p>The seller's one-time code for this listing was on paper in the photos, which makes reused or downloaded photos unlikely. It doesn't show who owns the item.</p>
   <span class="slip" aria-label="Capture code {{ payload.capture_code }}">{{ payload.capture_code }}</span>
   {% else %}
   <p>The seller's one-time code wasn't visible, so these photos could be older or taken elsewhere.</p>

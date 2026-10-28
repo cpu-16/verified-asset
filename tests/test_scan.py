@@ -48,6 +48,7 @@ def data_url():
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     monkeypatch.delenv("MODEL_API_KEY", raising=False)
+    monkeypatch.setenv("SCAN_ENABLED", "1")
     import app.main as main
     main = importlib.reload(main)
     main.app.state.sam = None
@@ -99,3 +100,10 @@ def test_scan_rules_only_show_problems_never_rule_them_out():
                                 defects=(Defect("scratch", "top"),))]
     assert [v.status for v in scan(claims, clean)] == [Status.INCONCLUSIVE, Status.SUPPORTED]
     assert scan(claims, damaged)[0].status == Status.CONTRADICTED
+
+
+def test_scan_is_off_unless_enabled(client, monkeypatch):
+    main, c = client
+    monkeypatch.delenv("SCAN_ENABLED")
+    assert c.get("/scan").status_code == 404
+    assert c.post("/api/scan", json={"title": "x", "images": [data_url()]}).status_code == 404

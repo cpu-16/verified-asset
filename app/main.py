@@ -330,8 +330,15 @@ def data_url_bytes(url: str) -> bytes:
     return data
 
 
+def scan_enabled():
+    """Off unless SCAN_ENABLED is set: the buyer scan is roadmap, shown only with our own sample photos."""
+    if not os.getenv("SCAN_ENABLED"):
+        raise HTTPException(404)
+
+
 @app.post("/api/scan")
 def scan_api(request: Request, body: ScanIn):
+    scan_enabled()
     observer, rows = run_scan(body.title, body.description,
                               [data_url_bytes(u) for u in body.images[:MAX_SCAN_PHOTOS + 1]])
     return {"observer": observer, "claims": rows,
@@ -340,12 +347,14 @@ def scan_api(request: Request, body: ScanIn):
 
 @app.get("/scan", response_class=HTMLResponse)
 def scan_form(request: Request):
+    scan_enabled()
     return templates.TemplateResponse(request, "scan.html", {"max": MAX_SCAN_PHOTOS})
 
 
 @app.post("/scan", response_class=HTMLResponse)
 async def scan_page(request: Request, title: str = Form(""), description: str = Form(""),
                     files: list[UploadFile] = File(...)):
+    scan_enabled()
     images = [await f.read(MAX_SCAN_BYTES + 1) for f in files[:MAX_SCAN_PHOTOS + 1] if f.filename]
     ctx = {"max": MAX_SCAN_PHOTOS, "title": title, "description": description}
     try:

@@ -20,7 +20,7 @@ without seeing it, and fixed rules compare the two.</p>
 </ul>
 </div>
 <h2>Ask the seller for proof</h2>
-<p>Send this to the seller. A Verified Asset report adds photos taken today, with a one-time code on paper.</p>
+<p>Send this to the seller. A Verified Asset report adds guided photos with a one-time code on paper, which makes reused photos unlikely.</p>
 <textarea id="message" rows="5" readonly>{{ message }}</textarea>
 <p><button type="button" onclick="navigator.clipboard.writeText(document.getElementById('message').value).then(() => this.textContent = 'Copied')">Copy message</button></p>
 <p class="mono soft">{{ observer }}</p>
@@ -32,7 +32,7 @@ without seeing it, and fixed rules compare the two.</p>
   <label>Title <input name="title" value="{{ title }}" maxlength="200" placeholder="White dining table with 4 chairs"></label>
   <p><label>Description <textarea name="description" rows="4" maxlength="2000" placeholder="Barely used, no scratches. Comes with 4 chairs.">{{ description }}</textarea></label></p>
   <p><label>Listing photos, up to {{ max }}<input type="file" name="files" accept="image/*" multiple required></label></p>
-  <p class="soft">Nothing is saved. The text and photos are only used for this check.</p>
+  <p class="soft">Use only photos you took or have permission to share. Nothing is saved: the text and photos are only used for this check.</p>
   <p><button>Check the listing</button></p>
 </form>
 {% endblock %}

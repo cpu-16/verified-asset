@@ -12,7 +12,7 @@ from .adjudicate import Status, Verdict
 from .catalog import RULES_VERSION, Claim
 
 REPORT_DAYS = 30
-LIMITS = ("Checked only as photographed. A report is not proof of ownership, authenticity, "
+LIMITS = ("Checked only as photographed. A report is not proof of ownership, current possession, authenticity, "
           "function, comprehensive condition or seller trustworthiness. Edits made outside "
           "Verified Asset (for example on Marketplace) cannot be detected.")
 
