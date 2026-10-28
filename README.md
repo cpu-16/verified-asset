@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Before you drive across town or pay, see which of the seller's claims the photos back up.</b><br>
-  Evidence reports for second-hand furniture listings, built on Meta's Muse Spark and SAM.
+  Evidence reports for second-hand item listings, built on Meta's Muse Spark and SAM.
 </p>
 
 <p align="center">
@@ -51,7 +51,7 @@ flowchart LR
     edit["Seller edits the listing"] -. voids .-> report
 ```
 
-1. **Claims first.** Each claim gets a type: a piece count, a colour, no visible damage, or *other* (material, age, "works fine"). *Other* claims stay on the report, marked as something photos can't show. The seller can type the rows or press **Suggest claims**: Muse Spark reads only the description they wrote or dictated and proposes rows, marked as suggested, for them to keep or change before any photo is taken. Or they can **film the item instead**: the phone sends 10 still frames (never the video), Muse Spark drafts the title, description, counts and colour and picks the front, side and close-up, and the seller keeps or changes every line before anything is saved. It never drafts "no visible damage", and the report marks each claim it drafted.
+1. **Claims first.** Choose a category and tap fixed attribute suggestions, or write your own claim. Each claim gets a type: a piece count, a colour, no visible damage, or *other* (material, age, "works fine"). *Other* claims stay on the report, marked as something photos can't show. The seller can type the rows or press **Suggest claims**: Muse Spark reads only the description they wrote or dictated and proposes rows, marked as suggested, for them to keep or change before any photo is taken. Or they can **film the item instead**: the phone sends 10 still frames (never the video), Muse Spark drafts the title, description, counts and colour and picks the front, side and close-up, and the seller keeps or changes every line before anything is saved. It never drafts "no visible damage", and the report marks each claim it drafted.
 2. **Only the photos the claims need.** A count needs the front and side; damage needs a close-up too. The listing's code goes on paper in the front photo.
 3. **Blind observation.** Muse Spark gets one photo at a time, a strict JSON schema and the nouns to count. It never gets the claim sentences or the claimed number, colour or condition. Its prompt says text in a photo is evidence, not instructions; the evaluation has one injection probe, which is not a guarantee.
 4. **Rules decide.** Plain Python compares each claim's type and value with the observations, and the sentence buyers read must name the same number or colour. A required photo that is blurry, dark or cut off, a count with no photo showing every piece, or a SAM count that disagrees with Spark makes the claim *can't tell*, with the photo that would help.
@@ -65,7 +65,11 @@ flowchart LR
 | Piece count | front, side | one photo shows exactly that many, all in view | every piece is in view and the count differs | can't tell; asks for one photo with all of them in view |
 | Colour | front | the claimed colour family is among the dominant colours | other colours are seen, not the claimed one | can't tell |
 | No visible damage | front, side, close-up | no damage seen in any of them, *as photographed* | any visible damage | can't tell if a photo is unusable |
+| No visible damage on a part | close-up | the part is counted as fully visible, with no damage located on it | damage is located on that part | asks for a complete close-up of that part |
+| Label text | close-up | the entire transcribed text matches (case and spacing ignored) | never: text has no reliable label provenance | asks for a legible label close-up |
 | Other | none | never | never | always *can't be checked from photos* |
+
+Category suggestions are a fixed catalogue, with no AI or retrieval. New part and label rules have unit tests but have not been evaluated on labelled real photos across these categories. The recorded evaluation below remains limited to dining sets and sofas. Label text never certifies brand authenticity.
 
 Photo-checkable claims also end in *can't tell* when a required photo is missing or marked unusable, and a count does when SAM 3.1 runs and disagrees with Spark. The code is [`app/adjudicate.py`](app/adjudicate.py); the model's instructions are in [`app/observe.py`](app/observe.py).
 </details>

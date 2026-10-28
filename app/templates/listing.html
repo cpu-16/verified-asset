@@ -113,6 +113,10 @@
         {% endif %}
         <b>{{ slot|capitalize }}</b>
         <p class="soft">{{ prompt }}</p>
+        {% if slot == 'detail' %}{% for claim in claims %}
+          {% if claim.type == 'part_no_damage' %}<p class="hint">Show the entire {{ claim.subject }}, including its edges.</p>{% endif %}
+          {% if claim.type == 'label_text' %}<p class="hint">Make the label text “{{ claim.value }}” legible.</p>{% endif %}
+        {% endfor %}{% endif %}
         {% if marks.get(slot) %}<p class="soft">Boxes: what SAM 3.1 located for the check. Only you see them.</p>{% endif %}
         {% if not listing.sample %}<button class="upload secondary" type="submit">Upload photo</button>{% endif %}
       </form>

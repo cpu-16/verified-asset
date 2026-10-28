@@ -4,8 +4,9 @@ The model never decides. Defaults lean to `inconclusive`: a claim is only
 `supported` when every required view is usable and the observation positively
 matches. Pure functions, no I/O.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
+import re
 
 from .catalog import SLOT_PROMPTS, Claim, ClaimType, Slot
 from .observation import PhotoObservation
@@ -153,6 +154,50 @@ def _damage(claim: Claim, views: list[PhotoObservation]) -> Verdict:
                    tuple(o.photo_id for o in views))
 
 
+def _part_damage(claim: Claim, views: list[PhotoObservation]) -> Verdict:
+    part = claim.subject.strip().lower()
+    request = f"Take a clear close-up showing the entire {part}, including its edges."
+    if not part:
+        return _inconclusive(claim, "NOT_PHOTO_CHECKABLE")
+    pattern = rf"\b{re.escape(part)}s?\b"
+    hits = [(o, d) for o in views for d in o.defects if re.search(pattern, d.location.lower())]
+    if hits:
+        return Verdict(claim.id, Status.CONTRADICTED, "DAMAGE_SEEN",
+                       "Seen: " + "; ".join(f"{d.kind} ({d.location})" for _, d in hits) + ".",
+                       tuple(dict.fromkeys(o.photo_id for o, _ in hits)))
+    visible = [o for o in views if (c := o.count_for(part)) and c.count > 0
+               and c.all_instances_fully_visible and (c.sam_count is None or c.sam_count == c.count)]
+    # Unlocated defects could be on this part: never silently dismiss them.
+    ambiguous = any(not d.location.strip() or d.location.lower() in ("unknown", "item", "surface")
+                    for o in views for d in o.defects)
+    if visible and not ambiguous:
+        return Verdict(claim.id, Status.SUPPORTED, "PART_NO_DAMAGE",
+                       f"The {part} is fully in view with no visible damage, as photographed.",
+                       tuple(o.photo_id for o in visible))
+    return Verdict(claim.id, Status.INCONCLUSIVE, "PART_NOT_SEEN",
+                   f"The photos do not establish a clear, complete view of the {part} without damage.",
+                   request=request)
+
+
+def _label_text(claim: Claim, views: list[PhotoObservation]) -> Verdict:
+    normalize = lambda text: " ".join(text.casefold().split())
+    wanted = normalize(claim.value)
+    matches = [o for o in views if wanted and any(normalize(t) == wanted for t in o.visible_text)]
+    if matches:
+        return Verdict(claim.id, Status.SUPPORTED, "LABEL_READ",
+                       f'The visible text reads “{claim.value}”. This does not verify authenticity.',
+                       tuple(o.photo_id for o in matches))
+    # OCR has no label identity/location. Another brand may be an accessory or background.
+    return Verdict(claim.id, Status.INCONCLUSIVE, "LABEL_NOT_READ",
+                   f'The text “{claim.value}” could not be read unambiguously.',
+                   request=f'Take a close-up of the item’s label with “{claim.value}” clearly legible.')
+
+
+RULES = {ClaimType.COLOR: _color, ClaimType.PIECE_COUNT: _count,
+         ClaimType.NO_VISIBLE_DAMAGE: _damage, ClaimType.PART_NO_DAMAGE: _part_damage,
+         ClaimType.LABEL_TEXT: _label_text}
+
+
 def adjudicate(claims: list[Claim], obs: list[PhotoObservation]) -> list[Verdict]:
     verdicts = []
     for claim in claims:
@@ -162,10 +207,15 @@ def adjudicate(claims: list[Claim], obs: list[PhotoObservation]) -> list[Verdict
             continue
         views, blocked = _views(claim, obs)
         if blocked:
+            if claim.type == ClaimType.PART_NO_DAMAGE:
+                blocked = replace(blocked, request=f"Take a clear close-up showing the entire {claim.subject}, including its edges.")
+            elif claim.type == ClaimType.LABEL_TEXT:
+                blocked = replace(blocked, request=f'Take a clear close-up of the item’s label with “{claim.value}” legible.')
             verdicts.append(blocked)
             continue
-        rule = {ClaimType.COLOR: _color, ClaimType.PIECE_COUNT: _count,
-                ClaimType.NO_VISIBLE_DAMAGE: _damage}[claim.type]
+        rule = RULES[claim.type]
+        if claim.type in (ClaimType.PART_NO_DAMAGE, ClaimType.LABEL_TEXT):
+            views = [o for o in obs if o.usable]
         verdicts.append(rule(claim, views))
     return verdicts
 
@@ -186,6 +236,8 @@ def scan(claims: list[Claim], obs: list[PhotoObservation]) -> list[Verdict]:
             verdicts.append(Verdict(claim.id, Status.INCONCLUSIVE, "UNUSABLE_VIEW",
                                     "None of the listing photos is clear enough to check this.",
                                     request="clear, well-lit photos of the whole item"))
+        elif claim.type == ClaimType.LABEL_TEXT:
+            verdicts.append(_label_text(claim, views))
         elif claim.type == ClaimType.COLOR:
             v = _color(claim, views)
             verdicts.append(v if v.status != Status.INCONCLUSIVE else

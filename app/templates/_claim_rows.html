@@ -1,21 +1,29 @@
-<p class="soft">One claim per row. Things photos can't show, like "sturdy" or "works fine", go under "Other": they stay on the report, marked as not checkable.</p>
-{% set examples = [("piece_count", "Set of 4 chairs", "chair", "4"), ("color", "White finish", "", "white"),
-                   ("no_visible_damage", "No scratches or stains", "", ""), ("uncheckable", "Solid oak, not veneer", "", "")] %}
-<div class="claim-rows"{% if suggested %} data-stagger{% endif %}>
-{% for i in rows %}{% set c = claims[i] if claims is defined and i < claims|length else none %}
-{% set ex = examples[i] if i < examples|length and not (claims is defined and claims) else ("uncheckable", "", "", "") %}{% set current = c.type if c else ex[0] %}
-{% set tagged = c and (suggested or c.by) %}
-<div class="claim-row{% if tagged %} suggested{% endif %}">
-  <label>Type
-    <select name="type{{ i }}">
-      {% for t in types %}<option value="{{ t }}" {% if current == t %}selected{% endif %}>{{ {"color": "Color", "piece_count": "Number of pieces", "no_visible_damage": "No visible damage", "uncheckable": "Other"}[t] }}</option>{% endfor %}
-    </select></label>
-  <label class="text">Your claim <input name="text{{ i }}" placeholder="{{ ex[1] }}" value="{{ c.text if c else '' }}"></label>
-  <label class="what">What to count <input name="subject{{ i }}" placeholder="{{ ex[2] }}" value="{{ c.subject if c else '' }}"></label>
-  <label class="value">Value <input name="value{{ i }}" placeholder="{{ ex[3] }}" value="{{ c.value if c else '' }}"></label>
-  {#- last, so the Type label stays :first-child for the phone layout #}
-  <input type="hidden" name="by{{ i }}" value="{{ c.by if c else '' }}">
-  {% if tagged %}<span class="ai-tag"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-spark"/></svg>{{ "From your video" if c.by == "video" else "Suggested" }}</span>{% endif %}
-</div>
-{% endfor %}
+<div class="attribute-editor">
+  <label>What are you selling?
+    <select class="category-picker" aria-label="Product category">
+      <option value="">Choose a category</option>
+      {% for category in categories %}<option>{{ category }}</option>{% endfor %}
+    </select>
+  </label>
+  <p class="soft">Tap an attribute, then fill in its value if needed. You can also write your own claim.</p>
+  <div class="attribute-chips" aria-label="Suggested attributes"></div>
+  <button class="secondary add-free" type="button">Write another claim</button>
+  <p class="hint">Other claims stay on the report as not checked from photos. Label text does not prove authenticity.</p>
+  <p class="attribute-status hint" role="status"></p>
+  <div class="claim-rows">
+  {% for i in rows %}{% set c = claims[i] if claims is defined and i < claims|length else none %}
+  {% set current = c.type if c else 'uncheckable' %}{% set tagged = c and (suggested or c.by) %}
+    <div class="claim-row{% if tagged %} suggested{% endif %}" {% if not c %}hidden{% endif %}>
+      <label>Type <select name="type{{ i }}">
+        {% for t in types %}<option value="{{ t }}" {% if current == t %}selected{% endif %}>{{ {"color": "Color", "piece_count": "Number of pieces", "no_visible_damage": "No visible damage", "part_no_damage": "No damage on a part", "label_text": "Label text", "uncheckable": "Other (not checked from photos)"}[t] }}</option>{% endfor %}
+      </select></label>
+      <label class="text">Your claim <input name="text{{ i }}" maxlength="200" value="{{ c.text if c else '' }}"></label>
+      <label class="what">Object or part <input name="subject{{ i }}" maxlength="40" value="{{ c.subject if c else '' }}"></label>
+      <label class="value">Value <input name="value{{ i }}" maxlength="40" value="{{ c.value if c else '' }}"></label>
+      <input type="hidden" name="by{{ i }}" value="{{ c.by if c else '' }}">
+      <button class="secondary remove-claim" type="button">Remove claim</button>
+      {% if tagged %}<span class="ai-tag">{{ "From your video" if c.by == "video" else "Suggested" }}</span>{% endif %}
+    </div>
+  {% endfor %}
+  </div>
 </div>

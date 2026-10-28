@@ -24,7 +24,7 @@ from pydantic import BaseModel
 
 from . import reports
 from .adjudicate import COLOR_FAMILIES, adjudicate, capture_code_seen, color_family, scan
-from .catalog import SLOT_PROMPTS, SUBJECT, Claim, ClaimType, Slot, count_subjects, required_slots
+from .catalog import CATEGORIES, SLOT_PROMPTS, SUBJECT, Claim, ClaimType, Slot, count_subjects, required_slots
 from .observation import PhotoObservation
 from .store import Store
 
@@ -33,7 +33,7 @@ SAMPLE = BASE.parent / "eval"
 DATA = Path(os.environ.get("DATA_DIR", "data"))
 MAX_PHOTO_BYTES = 12_000_000
 MAX_SCAN_PHOTOS, MAX_SCAN_BYTES = 6, 5_000_000
-CLAIM_ROWS = 6
+CLAIM_ROWS = 12
 MAX_FILM_FRAMES = 12
 MAX_FRAME_BYTES = 2_000_000  # the phone sends JPEGs of at most 1280 px
 
@@ -41,6 +41,7 @@ app = FastAPI(title="Verified Asset")
 app.add_middleware(CORSMiddleware, allow_origins=["https://www.facebook.com"],
                    allow_methods=["GET"])  # the browser extension reads /api/r/* from Marketplace
 templates = Jinja2Templates(directory=BASE / "templates")
+templates.env.globals["categories"] = CATEGORIES
 templates.env.filters["day"] = lambda iso: datetime.fromisoformat(iso).strftime("%-d %b %Y")
 templates.env.filters["timestamp"] = lambda iso: datetime.fromisoformat(iso).astimezone(timezone.utc).strftime("%-d %b %Y, %H:%M:%S UTC")
 app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
@@ -101,15 +102,21 @@ def parse_claims(form) -> list[Claim]:
             continue
         ctype = ClaimType(form.get(f"type{i}") or ClaimType.UNCHECKABLE)
         subject = " ".join((form.get(f"subject{i}") or "").lower().split())
-        if ctype == ClaimType.PIECE_COUNT and not SUBJECT.fullmatch(subject):
+        if ctype in (ClaimType.PIECE_COUNT, ClaimType.PART_NO_DAMAGE) and not SUBJECT.fullmatch(subject):
             raise HTTPException(422, "What to count must be one to three plain words, e.g. 'chair'.")
         value = (form.get(f"value{i}") or "").strip()[:40]
         if ctype == ClaimType.PIECE_COUNT and not (value.isdigit() and 0 < int(value) < 100):
             raise HTTPException(422, f"Claim {i + 1}: enter the number of pieces as digits, e.g. 4.")
+        if ctype == ClaimType.PART_NO_DAMAGE:
+            text = f"{subject.capitalize()} has no visible damage"
+        if ctype == ClaimType.LABEL_TEXT:
+            if not value:
+                raise HTTPException(422, "Enter the text to read on the label.")
+            text = f"Label reads: {value}"
         if why := sentence_mismatch(ctype, text, value):
             raise HTTPException(422, f"Claim {i + 1} {why}. Make them match: buyers read your sentence.")
         claims.append(Claim(id=f"c{i + 1}", type=ctype, text=text[:200],
-                            subject=subject[:40] if ctype == ClaimType.PIECE_COUNT else "", value=value,
+                            subject=subject[:40] if ctype in (ClaimType.PIECE_COUNT, ClaimType.PART_NO_DAMAGE) else "", value=value,
                             by="video" if form.get(f"by{i}") == "video" else ""))
     if not claims:
         raise HTTPException(422, "Add at least one claim.")

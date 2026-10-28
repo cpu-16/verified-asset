@@ -1,4 +1,4 @@
-"""Closed catalogue of furniture claims a seller can make.
+"""Closed catalogue of second-hand item claims a seller can make.
 
 Each claim type says which photo slots it needs and whether photos can ever
 support it. The model never sees claim values; it only gets neutral tasks
@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import re
 from enum import StrEnum
 
-RULES_VERSION = "2026-10-28.1"
+RULES_VERSION = "2026-10-28.2"
 
 
 class Slot(StrEnum):
@@ -28,6 +28,8 @@ class ClaimType(StrEnum):
     COLOR = "color"
     PIECE_COUNT = "piece_count"
     NO_VISIBLE_DAMAGE = "no_visible_damage"
+    PART_NO_DAMAGE = "part_no_damage"
+    LABEL_TEXT = "label_text"
     UNCHECKABLE = "uncheckable"
 
 
@@ -35,6 +37,8 @@ REQUIRED_SLOTS = {
     ClaimType.COLOR: (Slot.FRONT,),
     ClaimType.PIECE_COUNT: (Slot.FRONT, Slot.SIDE),
     ClaimType.NO_VISIBLE_DAMAGE: (Slot.FRONT, Slot.SIDE, Slot.DETAIL),
+    ClaimType.PART_NO_DAMAGE: (Slot.DETAIL,),
+    ClaimType.LABEL_TEXT: (Slot.DETAIL,),
     ClaimType.UNCHECKABLE: (),
 }
 
@@ -69,8 +73,37 @@ SUBJECT = re.compile(r"[a-z]+(?: [a-z]+){0,2}")  # the only seller text the obse
 def count_subjects(claims: list[Claim]) -> list[str]:
     """Nouns the observer is asked to count. Subjects only, never values."""
     return sorted({c.subject.strip().lower() for c in claims
-                   if c.type == ClaimType.PIECE_COUNT and c.subject.strip()})
+                   if c.type in (ClaimType.PIECE_COUNT, ClaimType.PART_NO_DAMAGE) and c.subject.strip()})
 
 
 def required_slots(claims: list[Claim]) -> list[Slot]:
     return [s for s in Slot if any(s in c.required_slots for c in claims)]
+
+
+# Fixed UI suggestions. No inference, retrieval or model call.
+def attribute(label, rule, subject="", value=""):
+    return dict(label=label, type=str(rule), subject=subject, value=value)
+
+
+COMMON_ATTRIBUTES = [
+    attribute("Color", ClaimType.COLOR),
+    attribute("No visible damage", ClaimType.NO_VISIBLE_DAMAGE),
+    attribute("Label reads", ClaimType.LABEL_TEXT),
+]
+CATEGORIES = {
+    "Furniture": [attribute("Chairs", ClaimType.PIECE_COUNT, "chair"),
+                  attribute("Seat cushions", ClaimType.PIECE_COUNT, "seat cushion"),
+                  attribute("Upholstery has no visible damage", ClaimType.PART_NO_DAMAGE, "upholstery")],
+    "Phones & tablets": [attribute("Includes charger", ClaimType.PIECE_COUNT, "charger", "1"),
+                         attribute("Screen has no visible damage", ClaimType.PART_NO_DAMAGE, "screen")],
+    "Electronics & gaming": [attribute("Controllers", ClaimType.PIECE_COUNT, "controller"),
+                             attribute("Includes cable", ClaimType.PIECE_COUNT, "cable", "1"),
+                             attribute("Screen has no visible damage", ClaimType.PART_NO_DAMAGE, "screen")],
+    "Clothing & shoes": [attribute("Shoes (individual shoes)", ClaimType.PIECE_COUNT, "shoe"),
+                         attribute("Shirts", ClaimType.PIECE_COUNT, "shirt"),
+                         attribute("Sole has no visible damage", ClaimType.PART_NO_DAMAGE, "sole")],
+    "Kitchen & home": [attribute("Plates", ClaimType.PIECE_COUNT, "plate"),
+                       attribute("Cups", ClaimType.PIECE_COUNT, "cup"),
+                       attribute("Handle has no visible damage", ClaimType.PART_NO_DAMAGE, "handle")],
+}
+CATEGORIES = {name: attrs + COMMON_ATTRIBUTES for name, attrs in CATEGORIES.items()}

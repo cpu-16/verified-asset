@@ -1,7 +1,7 @@
 [project]
 name = "verified-asset"
 version = "0.1.0"
-description = "Evidence reports for second-hand furniture listings, scoped to what photos can show."
+description = "Evidence reports for second-hand item listings, scoped to what photos can show."
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.120",

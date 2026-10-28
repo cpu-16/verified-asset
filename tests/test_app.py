@@ -469,3 +469,47 @@ def test_film_draft_keeps_only_counts_and_colours_that_match(client, monkeypatch
     assert c.post(f"/l/{listing_id}/video?k={key}", files=frames).status_code == 429
     assert c.post(f"/l/{listing_id}/video?k={key}", files=[("frames", ("f.jpg", b"x" * 2_000_001, "image/jpeg"))]
                   ).status_code == 413
+
+
+def test_category_attributes_survive_save_check_report_and_api(client):
+    main, c = client
+    class AttributeObserver:
+        name = 'fake attribute observer'
+        def observe(self, photos, count_nouns):
+            assert count_nouns == ['screen']
+            return CheckResult(self.name, True, observations=[
+                PhotoObservation(p.id, p.slot, True, counts=(Count('screen', 1, True),),
+                                 visible_text=('Samsung',)) for p in photos])
+    main.app.state.observer = AttributeObserver()
+    response = c.post('/new', data={
+        'title': 'Phone', 'text0': 'Screen has no visible damage',
+        'type0': 'part_no_damage', 'subject0': 'screen',
+        'text1': 'Label reads: Samsung', 'type1': 'label_text', 'value1': 'Samsung',
+    }, follow_redirects=False)
+    assert response.status_code == 303
+    url = response.headers['location']
+    path, key = url.split('?k=')
+    assert 'screen' in c.get(url).text
+    assert c.post(f'{path}/photo?k={key}', data={'slot': 'detail'},
+                  files={'file': ('detail.jpg', jpeg(), 'image/jpeg')}).status_code == 200
+    c.post(f'{path}/check?k={key}')
+    response = c.post(f'{path}/report?k={key}', follow_redirects=False)
+    report_url = response.headers['location']
+    payload = c.get('/api' + report_url).json()
+    assert [v['status'] for v in payload['verdicts']] == ['supported', 'supported']
+    assert payload['verdicts'][1]['claim'] == 'Label reads: Samsung'
+    assert 'authenticity' in payload['verdicts'][1]['detail']
+    assert 'screen' in c.get(report_url).text
+
+
+def test_new_attributes_validate_subject_and_label_and_canonicalize_text(client):
+    main, c = client
+    for fields in ({'type0': 'part_no_damage', 'subject0': 'screen? inject'},
+                   {'type0': 'label_text', 'value0': ''}):
+        assert c.post('/new', data={'title': 'Phone', 'text0': 'Claim', **fields}).status_code == 422
+    response = c.post('/new', data={'title': 'Phone', 'text0': 'Authentic Apple',
+                                   'type0': 'label_text', 'value0': 'Samsung'}, follow_redirects=False)
+    assert response.status_code == 303
+    listing_id = response.headers['location'].split('?')[0].split('/')[-1]
+    claims = main.store.claims_of(main.store.latest_version(listing_id))
+    assert claims[0].text == 'Label reads: Samsung'
