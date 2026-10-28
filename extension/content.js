@@ -401,7 +401,10 @@
     button.type = "button";
     button.addEventListener("click", function () {
       var message = VACore.sellerMessage(session.base, sourceUrl());
+      var settled = false;
       var done = function (copied) {
+        if (settled) return;
+        settled = true;
         session.notice = copied
           ? "Copied."
           : "Could not copy. Select the message below and copy it yourself.";
@@ -409,6 +412,9 @@
         render(session);
       };
       if (navigator.clipboard && navigator.clipboard.writeText) {
+        setTimeout(function () {
+          done(false); // a clipboard permission that never answers
+        }, 1500);
         navigator.clipboard.writeText(message).then(
           function () {
             done(true);
