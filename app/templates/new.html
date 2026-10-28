@@ -2,15 +2,26 @@
 {% block title %}Describe your item · Verified Asset{% endblock %}
 {% block main %}
 <div class="narrow">
-<h1>Describe your item</h1>
-<p class="lede">Write what you'd tell a buyer. Next you'll take the photos that back it up.</p>
-<form method="post" action="/new" class="card">
+<ol class="steps" aria-label="Steps">
+  <li class="on" aria-current="step"><span class="n">1</span>Describe</li>
+  <li><span class="n">2</span>Photos</li>
+  <li><span class="n">3</span>Check</li>
+  <li><span class="n">4</span>Share</li>
+</ol>
+<div class="page-head">
+  <h1 class="display">Describe your item</h1>
+  <p class="lede">Write what you'd tell a buyer. Next you'll take only the photos that back it up.</p>
+</div>
+<form method="post" action="/new" class="card form-card">
   <label>Title <input name="title" value="{{ title }}" required maxlength="200" placeholder="Oak dining set with 4 chairs"></label>
-  <p><label>Description <textarea name="description" rows="4" maxlength="2000">{{ description }}</textarea></label></p>
+  <label>Description <textarea name="description" rows="4" maxlength="2000" placeholder="Anything else a buyer should know.">{{ description }}</textarea></label>
   <input type="hidden" name="source" value="{{ source }}">
   <h2>Your claims</h2>
   {% include "_claim_rows.html" %}
-  <p><button type="submit">Continue to photos</button></p>
+  <div class="form-actions">
+    <button class="big" type="submit">Continue to photos</button>
+    <p>No sign-up. Nothing is checked until you ask.</p>
+  </div>
 </form>
 </div>
 {% endblock %}

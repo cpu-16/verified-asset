@@ -1,6 +1,7 @@
 <p class="soft">One claim per row. Things photos can't show, like "sturdy" or "works fine", go under "Other": they stay on the report, marked as not checkable.</p>
 {% set examples = [("piece_count", "Set of 4 chairs", "chair", "4"), ("color", "White finish", "", "white"),
                    ("no_visible_damage", "No scratches or stains", "", ""), ("uncheckable", "Solid oak, not veneer", "", "")] %}
+<div class="claim-rows">
 {% for i in rows %}{% set c = claims[i] if claims is defined and i < claims|length else none %}
 {% set ex = examples[i] if i < examples|length else ("uncheckable", "", "", "") %}{% set current = c.type if c else ex[0] %}
 <div class="claim-row">
@@ -13,3 +14,4 @@
   <label class="value">Value <input name="value{{ i }}" placeholder="{{ ex[3] }}" value="{{ c.value if c else '' }}"></label>
 </div>
 {% endfor %}
+</div>

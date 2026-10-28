@@ -4,6 +4,7 @@ Sellers have no accounts: the listing URL carries a secret `k` (capability link)
 """
 import base64
 import binascii
+import hashlib
 import io
 import json
 import os
@@ -17,6 +18,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import reports
@@ -37,6 +39,10 @@ app.add_middleware(CORSMiddleware, allow_origins=["https://www.facebook.com"],
                    allow_methods=["GET"])  # the browser extension reads /api/r/* from Marketplace
 templates = Jinja2Templates(directory=BASE / "templates")
 templates.env.filters["day"] = lambda iso: datetime.fromisoformat(iso).strftime("%-d %b %Y")
+app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
+# the CDN caches static files for days: a content hash in the URL makes a new deploy show up at once
+templates.env.globals["v"] = hashlib.sha256(b"".join(
+    f.read_bytes() for f in sorted((BASE / "static").iterdir()))).hexdigest()[:8]
 store = Store(DATA)
 
 

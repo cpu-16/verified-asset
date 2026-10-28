@@ -8,14 +8,14 @@
 {% if image %}<meta property="og:image" content="{{ image }}">{% endif %}
 {% endblock %}
 {% block main %}
-{% if payload.sample %}<p class="alert wait" role="note">Sample report: recorded Muse Spark observations of test photos, not a real listing.</p>{% endif %}
+{% if payload.sample %}<p class="alert sample" role="note"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-info"/></svg><span>Sample report: recorded Muse Spark observations of test photos, not a real listing.</span></p>{% endif %}
 {% if state != "active" %}
 <div class="state-page">
-<article class="card">
+<article class="card state-card">
+  <span class="state-ico {{ 'wait' if state == 'expired' else 'bad' }}"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#{{ 'i-alert' if state == 'expired' else 'i-x' }}"/></svg></span>
   <p class="kicker">Evidence report</p>
   <h1>{{ payload.title }}</h1>
   <div class="callout {{ 'wait' if state == 'expired' else 'bad' }}">
-    <svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#{{ 'i-alert' if state == 'expired' else 'i-x' }}"/></svg>
     <div>
       <h2>{{ {"invalidated": "No longer valid", "revoked": "Withdrawn", "expired": "Expired"}[state] }}</h2>
       <p>{{ {"invalidated": "The seller changed the listing after this report was issued, so it no longer vouches for it.",
@@ -36,7 +36,7 @@
 {% for slot, src in photos if slot not in ["front", "side", "detail"] %}{% set ns.items = ns.items + [(slot, src)] %}{% endfor %}
 <section class="gallery" id="gallery" aria-labelledby="photos-heading">
   <h2 id="photos-heading" class="sr">What the photos show</h2>
-  <div class="stage">
+  <div class="track">
   {% for slot, src in ns.items %}
     <figure class="slide" id="photo-{{ slot }}">
       <img src="{{ src }}" alt="{{ slot|capitalize }} photo checked for this report">
@@ -73,11 +73,11 @@
     {% endif %}
   </div>
   <ul class="counts">
-    {% if summary.contradicted %}<li><b>{{ summary.contradicted }}</b> contradicted</li>{% endif %}
-    <li><b>{{ summary.supported }}</b> supported</li>
-    <li><b>{{ summary.inconclusive }}</b> can't be checked from photos</li>
+    {% if summary.contradicted %}<li class="c-contradicted"><b>{{ summary.contradicted }}</b> contradicted</li>{% endif %}
+    <li class="c-supported"><b>{{ summary.supported }}</b> supported</li>
+    <li class="c-inconclusive"><b>{{ summary.inconclusive }}</b> can't be checked from photos</li>
   </ul>
-  <ul class="verdicts">
+  <ul class="verdicts" data-stagger>
   {% for status in ["contradicted", "supported", "inconclusive"] %}{% for c in payload.claims if c.verdict.status == status %}
     <li class="verdict {{ status }}">
       <span class="pill {{ status }}"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#{{ {'supported': 'i-check', 'contradicted': 'i-x', 'inconclusive': 'i-ask'}[status] }}"/></svg>{{ status|capitalize }}</span>

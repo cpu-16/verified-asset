@@ -1,21 +1,26 @@
 {% extends "base.html" %}
 {% block title %}{{ version.title }} · Verified Asset{% endblock %}
 {% block main %}
-{% if listing.sample %}<p class="alert wait" role="note">Sample listing: recorded Muse Spark observations of test photos, not a real listing. Edit the claims and run a check; the photos can't be changed.</p>{% endif %}
+{% if listing.sample %}<p class="alert sample" role="note"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-info"/></svg><span>Sample listing: recorded Muse Spark observations of test photos, not a real listing. Edit the claims and run a check; the photos can't be changed.</span></p>{% endif %}
 {% set d1 = photos %}
 {% set d2 = photos|length >= slots|length %}
 {% set d3 = check and check.ok and not stale %}
 {% set d4 = reports %}
 <p class="alert wait" role="note">
-  <svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-info"/></svg>
+  <svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-lock"/></svg>
   <span>Keep this page's link to yourself. Anyone with it can edit your listing and issue reports.</span>
 </p>
+<div class="page-head">
+  <span class="chip">Version {{ version.version }}</span>
+  <h1 class="display">{{ version.title }}</h1>
+  {% if version.description %}<p class="lede">{{ version.description }}</p>{% endif %}
+</div>
 <div class="seller">
 <nav class="card progress" aria-label="Listing steps">
   <ol>
     <li class="{% if d1 %}done{% else %}current{% endif %}">
       <span class="step-mark" aria-hidden="true">{% if d1 %}<svg class="ico" viewBox="0 0 20 20"><use href="#i-check"/></svg>{% else %}1{% endif %}</span>
-      <a href="#code"{% if not d1 %} aria-current="step"{% endif %}>{% if d1 %}<span class="sr">Done. </span>{% endif %}Write this code on a piece of paper</a>
+      <a href="#code"{% if not d1 %} aria-current="step"{% endif %}>{% if d1 %}<span class="sr">Done. </span>{% endif %}Write the code on paper</a>
     </li>
     <li class="{% if d2 %}done{% elif d1 %}current{% endif %}">
       <span class="step-mark" aria-hidden="true">{% if d2 %}<svg class="ico" viewBox="0 0 20 20"><use href="#i-check"/></svg>{% else %}2{% endif %}</span>
@@ -32,15 +37,12 @@
   </ol>
 </nav>
 <div class="seller-main">
-  <p class="soft">Version {{ version.version }}</p>
-  <h1>{{ version.title }}</h1>
-  {% if version.description %}<p>{{ version.description }}</p>{% endif %}
-
-  <section class="card" id="code">
-    <h2>Write this code on a piece of paper</h2>
-    <p>Put it next to the item in the front photo. It makes it hard to pass off old or downloaded photos as this listing's.</p>
-    <p class="soft">This listing's code</p>
-    <span class="slip">{{ listing.capture_code }}</span>
+  <section class="card code-card" id="code">
+    <div>
+      <h2>Write this code on a piece of paper</h2>
+      <p class="soft">Put it next to the item in the front photo. It makes it hard to pass off old or downloaded photos as this listing's.</p>
+    </div>
+    <span class="slip" aria-label="This listing's code {{ listing.capture_code }}">{{ listing.capture_code }}</span>
   </section>
 
   <section class="card" id="photos">
@@ -51,6 +53,7 @@
       <form class="tile" method="post" action="/l/{{ listing.id }}/photo?k={{ k }}" enctype="multipart/form-data">
         <input type="hidden" name="slot" value="{{ slot }}">
         {% if photos.get(slot) %}
+        <div class="scanwrap">
         {% if marks.get(slot) %}
         <div class="shot">
           <img src="/l/{{ listing.id }}/photo/{{ photos[slot].id }}?k={{ k }}" alt="Your {{ slot }} photo, with damage marked by SAM 3.1">
@@ -59,6 +62,7 @@
         {% else %}
         <img src="/l/{{ listing.id }}/photo/{{ photos[slot].id }}?k={{ k }}" alt="Your {{ slot }} photo">
         {% endif %}
+        </div>
         {% else %}
         <div class="tile-empty">
           <svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-photo"/></svg>
@@ -70,7 +74,7 @@
         {% if marks.get(slot) %}<p class="soft">Boxes: what SAM 3.1 located for the check. Only you see them.</p>{% endif %}
         {% if not listing.sample %}
         <input type="file" name="file" accept="image/*" capture="environment" required aria-label="{{ slot|capitalize }} photo">
-        <button type="submit">{{ "Replace photo" if photos.get(slot) else "Add photo" }}</button>
+        <button type="submit"{% if photos.get(slot) %} class="secondary"{% endif %}>{{ "Replace photo" if photos.get(slot) else "Add photo" }}</button>
         {% endif %}
       </form>
     {% endfor %}
@@ -92,7 +96,7 @@
       <span>Your photos changed after the last check. Run it again before sharing a report.</span>
     </p>
     {% endif %}
-    <ul class="verdicts">
+    <ul class="verdicts" data-stagger>
     {% for c in claims %}{% set v = verdicts.get(c.id) %}
       <li class="verdict {{ v.status if v else 'unchecked' }}">
         <span class="pill {{ v.status if v else 'unchecked' }}">
@@ -105,15 +109,25 @@
       </li>
     {% endfor %}
     </ul>
-    <form method="post" action="/l/{{ listing.id }}/check?k={{ k }}"><p><button type="submit">{{ "Check again" if check else "Check my claims" }}</button></p></form>
-    {% if check and check.ok %}<p class="mono soft">{{ check.observer }}, {{ check.latency_ms }} ms</p>{% endif %}
+    <form method="post" action="/l/{{ listing.id }}/check?k={{ k }}" id="check-form">
+      <div class="checking" role="status" aria-live="polite">
+        <ol>
+          {% for slot, _ in slots %}<li>Muse Spark is describing the {{ "close-up" if slot == "detail" else slot }} photo</li>{% endfor %}
+          <li>SAM 3.1 is counting and locating damage</li>
+          <li>Fixed rules are comparing claims with what was seen</li>
+        </ol>
+        <p class="hint">The model never sees your claims. This takes a few seconds.</p>
+      </div>
+      <div class="form-actions"><button class="big" type="submit">{{ "Check again" if check else "Check my claims" }}</button>
+      {% if check and check.ok %}<p class="mono">{{ check.observer }}, {{ check.latency_ms }} ms</p>{% endif %}</div>
+    </form>
   </section>
 
   <section class="card" id="share">
     <h2>Share the report</h2>
     {% if check and check.ok and not stale %}
-    <p>Paste the report link in your listing's description. Buyers see each claim and its result.</p>
-    <form method="post" action="/l/{{ listing.id }}/report?k={{ k }}"><p><button type="submit">Create report link</button></p></form>
+    <p class="soft">Paste the report link in your listing's description. Buyers see each claim and its result.</p>
+    <form method="post" action="/l/{{ listing.id }}/report?k={{ k }}"><div class="form-actions"><button type="submit">Create report link</button></div></form>
     {% else %}<p class="soft">Available after a successful check.</p>{% endif %}
     {% for r in reports %}
     <div class="share-block">
@@ -131,13 +145,15 @@
     <form method="post" action="/l/{{ listing.id }}/edit?k={{ k }}">
       <p class="soft">Saving creates version {{ version.version + 1 }}. Every report you shared stops being valid, so buyers never see claims you changed.</p>
       <label>Title <input name="title" value="{{ version.title }}" required></label>
-      <p><label>Description <textarea name="description" rows="3">{{ version.description }}</textarea></label></p>
+      <label>Description <textarea name="description" rows="3">{{ version.description }}</textarea></label>
       {% include "_claim_rows.html" %}
-      <p><button class="secondary" type="submit">Save version {{ version.version + 1 }}</button></p>
+      <div class="form-actions"><button class="secondary" type="submit">Save version {{ version.version + 1 }}</button></div>
     </form>
   </details>
 </div>
 </div>
+{% endblock %}
+{% block scripts %}
 <script>
 (function () {
   document.querySelectorAll("[data-copy]").forEach(function (btn) {
@@ -160,6 +176,18 @@
     tile.addEventListener("drop", function (e) {
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) input.files = e.dataTransfer.files;
     });
+  });
+  // While the check runs, show what is happening; the server's redirect replaces the page when it's done.
+  var form = document.getElementById("check-form");
+  if (form) form.addEventListener("submit", function () {
+    var steps = form.querySelectorAll(".checking li"), i = 0, btn = form.querySelector("button");
+    document.body.classList.add("is-checking");
+    btn.disabled = true; btn.textContent = "Checking…";
+    document.getElementById("check").scrollIntoView({ block: "start" });
+    (function next() {
+      steps.forEach(function (li, j) { li.className = j < i ? "past" : j === i ? "now" : ""; });
+      if (i < steps.length - 1) { i++; setTimeout(next, 1100); }
+    })();
   });
 })();
 </script>
