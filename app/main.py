@@ -2,10 +2,12 @@
 
 Sellers have no accounts: the listing URL carries a secret `k` (capability link).
 """
+import base64
+import binascii
 import json
 import os
-import re
 import time
+from urllib.parse import urlencode
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -13,16 +15,18 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
 from . import reports
-from .adjudicate import adjudicate, capture_code_seen
-from .catalog import SLOT_PROMPTS, Claim, ClaimType, Slot, count_subjects, required_slots
+from .adjudicate import adjudicate, capture_code_seen, scan
+from .catalog import SLOT_PROMPTS, SUBJECT, Claim, ClaimType, Slot, count_subjects, required_slots
 from .observation import PhotoObservation
 from .store import Store
 
 BASE = Path(__file__).parent
 DATA = Path(os.environ.get("DATA_DIR", "data"))
 MAX_PHOTO_BYTES = 12_000_000
+MAX_SCAN_PHOTOS, MAX_SCAN_BYTES = 6, 5_000_000
 CLAIM_ROWS = 6
 
 app = FastAPI(title="Verified Asset")
@@ -55,9 +59,6 @@ def seller_listing(listing_id: str, k: str):
     if row is None or k != row["seller_key"]:
         raise HTTPException(404)
     return row
-
-
-SUBJECT = re.compile(r"[a-z]+(?: [a-z]+){0,2}")  # the only seller text the observer sees
 
 
 def parse_claims(form) -> list[Claim]:
@@ -248,3 +249,111 @@ def report_api(request: Request, token: str):
                          "verdicts": [{"claim": c["text"], "status": c["verdict"]["status"],
                                        "detail": c["verdict"]["detail"],
                                        "request": c["verdict"]["request"]} for c in p["claims"]]})
+
+
+# Buyer side: check any listing's own text against its own photos ------------------
+def scan_claims(raw: list[dict]) -> list[Claim]:
+    """Model-extracted claims, re-validated: a bad count subject or number becomes 'Other'."""
+    claims = []
+    for i, d in enumerate(raw[:8]):
+        text = str(d.get("text", "")).strip()[:200]
+        ctype = ClaimType(d.get("type", ClaimType.UNCHECKABLE))
+        subject = " ".join(str(d.get("subject", "")).lower().split())[:40]
+        value = str(d.get("value", "")).strip()[:40]
+        if ctype == ClaimType.PIECE_COUNT and not (SUBJECT.fullmatch(subject) and value.isdigit()):
+            ctype = ClaimType.UNCHECKABLE
+        if text:
+            claims.append(Claim(id=f"c{i + 1}", type=ctype, text=text,
+                                subject=subject if ctype == ClaimType.PIECE_COUNT else "",
+                                value=value if ctype in (ClaimType.PIECE_COUNT, ClaimType.COLOR) else ""))
+    return claims
+
+
+def seller_message(base: str, source: str, rows: list[dict]) -> str:
+    asks = list(dict.fromkeys(r["request"] for r in rows if r["request"]))
+    link = f"{base}new?{urlencode({'source': source})}" if source else f"{base}new"
+    text = ("Hi! I'm interested. Before I come to see it, could you share a Verified Asset report? "
+            f"It's a few photos with a code written on paper, and it's free: {link}")
+    return text + ("\nThe photos that would help most: " + "; ".join(asks) + "." if asks else "")
+
+
+def run_scan(title: str, description: str, images: list[bytes]) -> tuple[str, list[dict]]:
+    """Text -> claims (text-only call), photos -> observations (never sees the text), rules decide.
+    Nothing is stored: the listing and its photos are only held for the request."""
+    from .observe import Photo, prepare_image
+    if not 1 <= len(images) <= MAX_SCAN_PHOTOS:
+        raise HTTPException(422, f"Send between 1 and {MAX_SCAN_PHOTOS} photos of the listing.")
+    if not (title.strip() or description.strip()):
+        raise HTTPException(422, "The listing has no title or description to check.")
+    try:
+        observer = get_observer()
+    except ValueError:
+        raise HTTPException(503, "No model is configured on this server yet.")
+    try:
+        photos = [Photo(id=f"p{i + 1}", slot=f"listing {i + 1}", data=prepare_image(b)[0])
+                  for i, b in enumerate(images)]
+    except Exception:
+        raise HTTPException(415, "One of the photos is not a readable image.")
+    try:
+        claims = scan_claims(observer.extract_claims(title[:200], description[:2000]))
+    except Exception as exc:  # network, spending cap or an invalid answer
+        raise HTTPException(503, f"Reading the listing text failed ({type(exc).__name__}). Try again.")
+    if not claims:
+        raise HTTPException(422, "The listing text doesn't make any claims to check.")
+    result = observer.observe(photos, count_subjects(claims))
+    if not result.ok:
+        raise HTTPException(503, f"Looking at the photos failed ({result.error}). Try again.")
+    obs = result.observations
+    sam = get_sam()
+    if sam is not None:
+        from .segment import enrich
+        obs = enrich(obs, photos, sam)
+    store.log(None, "scan", observer=observer.name, photos=len(photos), claims=len(claims))
+    return observer.name, [{"claim": c.text, "status": str(v.status), "detail": v.detail, "request": v.request}
+                           for c, v in zip(claims, scan(claims, obs))]
+
+
+class ScanIn(BaseModel):
+    title: str = ""
+    description: str = ""
+    source: str = ""
+    images: list[str]
+
+
+def data_url_bytes(url: str) -> bytes:
+    try:
+        data = base64.b64decode(url.split(",", 1)[1], validate=True)
+    except (IndexError, binascii.Error):
+        raise HTTPException(422, "Photos must be base64 data URLs.")
+    if len(data) > MAX_SCAN_BYTES:
+        raise HTTPException(413, "Each photo must be 5 MB or smaller.")
+    return data
+
+
+@app.post("/api/scan")
+def scan_api(request: Request, body: ScanIn):
+    observer, rows = run_scan(body.title, body.description,
+                              [data_url_bytes(u) for u in body.images[:MAX_SCAN_PHOTOS + 1]])
+    return {"observer": observer, "claims": rows,
+            "message": seller_message(str(request.base_url), body.source[:500], rows)}
+
+
+@app.get("/scan", response_class=HTMLResponse)
+def scan_form(request: Request):
+    return templates.TemplateResponse(request, "scan.html", {"max": MAX_SCAN_PHOTOS})
+
+
+@app.post("/scan", response_class=HTMLResponse)
+async def scan_page(request: Request, title: str = Form(""), description: str = Form(""),
+                    files: list[UploadFile] = File(...)):
+    images = [await f.read(MAX_SCAN_BYTES + 1) for f in files[:MAX_SCAN_PHOTOS + 1] if f.filename]
+    ctx = {"max": MAX_SCAN_PHOTOS, "title": title, "description": description}
+    try:
+        if any(len(b) > MAX_SCAN_BYTES for b in images):
+            raise HTTPException(413, "Each photo must be 5 MB or smaller.")
+        from starlette.concurrency import run_in_threadpool
+        ctx["observer"], ctx["rows"] = await run_in_threadpool(run_scan, title, description, images)
+        ctx["message"] = seller_message(str(request.base_url), "", ctx["rows"])
+    except HTTPException as exc:
+        ctx["error"] = exc.detail
+    return templates.TemplateResponse(request, "scan.html", ctx)

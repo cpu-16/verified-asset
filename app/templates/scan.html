@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Check a listing · Verified Asset{% endblock %}
+{% block main %}
+<h1>Check a listing before you go</h1>
+<p class="lede">Paste a listing's text and its photos. One model reads the text, another looks at the photos
+without seeing it, and fixed rules compare the two.</p>
+
+{% if rows %}
+<h2>What the listing's photos show</h2>
+<p class="soft">These are the seller's own photos, so a problem can show up here but can't be ruled out.</p>
+<div class="sheet">
+<ul class="verdicts">
+{% for status in ["contradicted", "supported", "inconclusive"] %}{% for r in rows if r.status == status %}
+  <li class="verdict {{ status }}">
+    <span class="mark">{{ status|capitalize }}</span>
+    <div><p class="claim">{{ r.claim }}</p><p class="why">{{ r.detail }}</p>
+      {% if r.request %}<p class="ask">What would settle it: {{ r.request }}.</p>{% endif %}</div>
+  </li>
+{% endfor %}{% endfor %}
+</ul>
+</div>
+<h2>Ask the seller for proof</h2>
+<p>Send this to the seller. A Verified Asset report adds photos taken today, with a one-time code on paper.</p>
+<textarea id="message" rows="5" readonly>{{ message }}</textarea>
+<p><button type="button" onclick="navigator.clipboard.writeText(document.getElementById('message').value).then(() => this.textContent = 'Copied')">Copy message</button></p>
+<p class="mono soft">{{ observer }}</p>
+<h2>Check another listing</h2>
+{% endif %}
+
+{% if error %}<p class="alert bad">{{ error }}</p>{% endif %}
+<form method="post" action="/scan" enctype="multipart/form-data" class="sheet">
+  <label>Title <input name="title" value="{{ title }}" maxlength="200" placeholder="White dining table with 4 chairs"></label>
+  <p><label>Description <textarea name="description" rows="4" maxlength="2000" placeholder="Barely used, no scratches. Comes with 4 chairs.">{{ description }}</textarea></label></p>
+  <p><label>Listing photos, up to {{ max }}<input type="file" name="files" accept="image/*" multiple required></label></p>
+  <p class="soft">Nothing is saved. The text and photos are only used for this check.</p>
+  <p><button>Check the listing</button></p>
+</form>
+{% endblock %}

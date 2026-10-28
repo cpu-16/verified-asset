@@ -5,6 +5,7 @@ support it. The model never sees claim values; it only gets neutral tasks
 derived from claim *subjects* (e.g. "count the chairs", never "are there 4?").
 """
 from dataclasses import dataclass
+import re
 from enum import StrEnum
 
 RULES_VERSION = "2026-10-27.1"
@@ -58,6 +59,9 @@ class Claim:
     def from_dict(cls, d: dict) -> "Claim":
         return cls(id=d["id"], type=ClaimType(d["type"]), text=d["text"],
                    subject=d.get("subject", ""), value=str(d.get("value", "")))
+
+
+SUBJECT = re.compile(r"[a-z]+(?: [a-z]+){0,2}")  # the only seller text the observer ever sees
 
 
 def count_subjects(claims: list[Claim]) -> list[str]:

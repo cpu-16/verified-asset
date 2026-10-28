@@ -43,7 +43,7 @@
     <div>
       <p class="claim">{{ c.text }}</p>
       <p class="why">{{ c.verdict.detail }}</p>
-      {% if c.verdict.request %}<p class="ask">Ask the seller for {{ c.verdict.request }}.</p>{% endif %}
+      {% if c.verdict.request %}<p class="ask">What would settle it: {{ c.verdict.request }}</p>{% endif %}
     </div>
   </li>
 {% endfor %}{% endfor %}

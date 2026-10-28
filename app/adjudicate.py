@@ -161,6 +161,46 @@ def adjudicate(claims: list[Claim], obs: list[PhotoObservation]) -> list[Verdict
     return verdicts
 
 
+def scan(claims: list[Claim], obs: list[PhotoObservation]) -> list[Verdict]:
+    """Buyer-side check of a listing's own photos: no guided views, no capture code.
+
+    The seller picked these photos, so they can show a problem but can't rule one
+    out: a short count or "no damage" never becomes supported or contradicted here.
+    """
+    views = [o for o in obs if o.usable]
+    verdicts = []
+    for claim in claims:
+        if claim.type == ClaimType.UNCHECKABLE:
+            verdicts.append(Verdict(claim.id, Status.INCONCLUSIVE, "NOT_PHOTO_CHECKABLE",
+                                    REASONS["NOT_PHOTO_CHECKABLE"]))
+        elif not views:
+            verdicts.append(Verdict(claim.id, Status.INCONCLUSIVE, "UNUSABLE_VIEW",
+                                    "None of the listing photos is clear enough to check this.",
+                                    request="clear, well-lit photos of the whole item"))
+        elif claim.type == ClaimType.COLOR:
+            v = _color(claim, views)
+            verdicts.append(v if v.status != Status.INCONCLUSIVE else
+                            Verdict(claim.id, Status.INCONCLUSIVE, v.reason, v.detail, v.photo_ids,
+                                    "a clear photo of the whole item in daylight"))
+        elif claim.type == ClaimType.PIECE_COUNT:
+            v = _count(claim, views)
+            if v.status == Status.CONTRADICTED:  # other pieces may simply be out of shot
+                seen = max(c.count for o in views
+                           if (c := o.count_for(claim.subject)) and c.all_instances_fully_visible)
+                shown = f"at most {seen}" if seen < int(claim.value) else str(seen)
+                v = Verdict(claim.id, Status.INCONCLUSIVE, v.reason,
+                            f"The listing photos show {shown} {claim.subject}(s), not {claim.value}.",
+                            v.photo_ids, f"one photo with all {claim.value} {claim.subject}s in view")
+            verdicts.append(v)
+        else:
+            v = _damage(claim, views)
+            verdicts.append(v if v.status == Status.CONTRADICTED else
+                            Verdict(claim.id, Status.INCONCLUSIVE, "NO_DAMAGE_SEEN",
+                                    "No damage shows in the listing photos, but they may not show every side.",
+                                    v.photo_ids, "close-ups of the main surfaces, edges and corners"))
+    return verdicts
+
+
 def capture_code_seen(code: str, obs: list[PhotoObservation]) -> list[str]:
     """Photo ids where the one-time capture code written on paper is legible."""
     want = code.strip().upper()
