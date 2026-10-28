@@ -5,11 +5,10 @@
       {% for category in categories %}<option>{{ category }}</option>{% endfor %}
     </select>
   </label>
-  <p class="soft">Tap an attribute, then fill in its value if needed. You can also write your own claim.</p>
+  <p class="soft">Tap to add; tap a claim to edit.</p>
   <div class="attribute-chips" aria-label="Suggested attributes"></div>
   <button class="secondary add-free" type="button">Write another claim</button>
-  <p class="hint">Other claims stay on the report as not checked from photos. Label text does not prove authenticity.</p>
-  <p class="attribute-status hint" role="status"></p>
+  <p class="attribute-status sr" role="status"></p>
   <div class="claim-rows">
   {% for i in rows %}{% set c = claims[i] if claims is defined and i < claims|length else none %}
   {% set current = c.type if c else 'uncheckable' %}{% set tagged = c and (suggested or c.by) %}
@@ -21,7 +20,7 @@
       <label class="what">Object or part <input name="subject{{ i }}" maxlength="40" value="{{ c.subject if c else '' }}"></label>
       <label class="value">Value <input name="value{{ i }}" maxlength="40" value="{{ c.value if c else '' }}"></label>
       <input type="hidden" name="by{{ i }}" value="{{ c.by if c else '' }}">
-      <button class="secondary remove-claim" type="button">Remove claim</button>
+      <button class="secondary remove-claim" type="button" aria-label="Remove claim">×</button>
       {% if tagged %}<span class="ai-tag">{{ "From your video" if c.by == "video" else "Suggested" }}</span>{% endif %}
     </div>
   {% endfor %}

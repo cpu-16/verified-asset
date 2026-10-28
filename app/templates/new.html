@@ -27,7 +27,6 @@
   {% if error %}<p class="alert bad" role="alert"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-alert"/></svg><span>{{ error }}</span></p>{% endif %}
   <input type="hidden" name="source" value="{{ source }}">
   <h2 id="claims">Your claims</h2>
-  <p class="soft">Choose attributes for your item or write your own.</p>
   {% if suggested %}<p class="alert ai" role="status"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-spark"/></svg><span>Muse Spark suggested these from your description. Check each one: change it, or clear its sentence to drop it. Nothing is saved until you continue.</span></p>{% endif %}
   {% include "_claim_rows.html" %}
   <div class="form-actions">
