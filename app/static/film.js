@@ -63,28 +63,6 @@
     });
   }
 
-  function sharpness(canvas, small) {
-    var width = small.width, height = small.height;
-    var ctx = small.getContext("2d");
-    ctx.drawImage(canvas, 0, 0, width, height);
-    var pixels = ctx.getImageData(0, 0, width, height).data;
-    var gray = new Float32Array(width * height);
-    for (var i = 0; i < gray.length; i++) {
-      gray[i] = pixels[i * 4] * 0.299 + pixels[i * 4 + 1] * 0.587 + pixels[i * 4 + 2] * 0.114;
-    }
-    var sum = 0, squares = 0, count = 0;
-    for (var y = 1; y < height - 1; y++) {
-      for (var x = 1; x < width - 1; x++) {
-        var p = y * width + x;
-        var value = gray[p - width] + gray[p + width] + gray[p - 1] + gray[p + 1] - 4 * gray[p];
-        sum += value;
-        squares += value * value;
-        count++;
-      }
-    }
-    return count ? Math.max(0, squares / count - Math.pow(sum / count, 2)) : 0;
-  }
-
   function jpeg(canvas) {
     return new Promise(function (resolve, reject) {
       canvas.toBlob(function (blob) {
@@ -139,32 +117,15 @@
       var canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
       canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
-      var best = document.createElement("canvas");
-      best.width = canvas.width;
-      best.height = canvas.height;
-      var small = document.createElement("canvas");
-      small.width = Math.min(160, canvas.width);
-      small.height = Math.max(3, Math.round(canvas.height * small.width / canvas.width));
       var data = new FormData(), times = [];
       for (var i = 0; i < 10; i++) {
-        var instant = duration * (0.04 + 0.92 * i / 9);
-        var bestScore = -1, bestTime;
-        // Pick the sharper nearby sample to avoid a moment of hand movement.
-        for (var j = 0; j < 2; j++) {
-          var time = Math.max(0, Math.min(duration, instant + (j ? 0.2 : -0.2)));
-          await seek(video, time);
-          canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
-          var score = sharpness(canvas, small);
-          if (score > bestScore) {
-            bestScore = score;
-            bestTime = time;
-            best.getContext("2d").drawImage(canvas, 0, 0);
-          }
-        }
-        // Keep even near-flat frames (variance below 20); the server judges usability.
-        var blob = await jpeg(best);
+        // One seek per frame: Muse Spark picks the photos from all ten, so a blurry one just isn't picked.
+        var time = duration * (0.04 + 0.92 * i / 9);
+        await seek(video, time);
+        canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+        var blob = await jpeg(canvas);
         data.append("frames", blob, "frame-" + (i < 9 ? "0" : "") + (i + 1) + ".jpg");
-        times.push(bestTime.toFixed(1));
+        times.push(time.toFixed(1));
         var img = document.createElement("img");
         var url = URL.createObjectURL(blob);
         urls.push(url);
