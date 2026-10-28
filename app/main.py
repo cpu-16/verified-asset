@@ -232,9 +232,22 @@ def public_report(token: str) -> tuple[dict, dict]:
 @app.get("/r/{token}", response_class=HTMLResponse)
 def report_page(request: Request, token: str):
     row, view = public_report(token)
+    photos = [(slot, f"/r/{token}/photo/{slot}") for slot in view["payload"]["photos"]] \
+        if view["state"] == "active" else []
     return templates.TemplateResponse(request, "report.html", {
         **view, "token": token, "summary": reports.summary(view["payload"]),
-        "url": str(request.url)})
+        "url": str(request.url), "photos": photos})
+
+
+@app.get("/r/{token}/photo/{slot}")
+def report_photo(token: str, slot: str):
+    """The exact checked photos (EXIF already stripped on upload), only while the report is active."""
+    row, view = public_report(token)
+    sha = view["payload"]["photos"].get(slot)
+    if view["state"] != "active" or not sha:
+        raise HTTPException(404)
+    return Response(store.photo_bytes(sha), media_type="image/jpeg",
+                    headers={"Cache-Control": "public, max-age=3600"})
 
 
 @app.get("/api/r/{token}")

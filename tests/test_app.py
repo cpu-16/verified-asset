@@ -79,6 +79,19 @@ def test_full_lifecycle(client):
                                                    "text0": "Black", "value0": "black"})
     old = c.get(f"/api/r/{token}").json()
     assert old["state"] == "invalidated" and "verdicts" not in old
+    assert c.get(f"/r/{token}/photo/front").status_code == 404  # photos go dark with the report
+
+
+def test_active_report_shows_the_checked_photos(client):
+    main, c = client
+    main.app.state.observer = FakeObserver()
+    listing_id, key = make_listing(c)
+    c.post(f"/l/{listing_id}/check?k={key}")
+    token = c.post(f"/l/{listing_id}/report?k={key}", follow_redirects=False).headers["location"].rsplit("/", 1)[1]
+    assert f"/r/{token}/photo/front" in c.get(f"/r/{token}").text
+    r = c.get(f"/r/{token}/photo/front")
+    assert r.status_code == 200 and r.headers["content-type"] == "image/jpeg"
+    assert c.get(f"/r/{token}/photo/detail").status_code == 404
 
 
 def test_failed_check_never_produces_a_report(client):
