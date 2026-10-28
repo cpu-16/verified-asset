@@ -51,7 +51,7 @@ flowchart LR
     edit["Seller edits the listing"] -. voids .-> report
 ```
 
-1. **Claims first.** Each claim gets a type: a piece count, a colour, no visible damage, or *other* (material, age, "works fine"). *Other* claims stay on the report, marked as something photos can't show.
+1. **Claims first.** Each claim gets a type: a piece count, a colour, no visible damage, or *other* (material, age, "works fine"). *Other* claims stay on the report, marked as something photos can't show. The seller can type the rows or press **Suggest claims**: Muse Spark reads only the description they wrote or dictated and proposes rows, marked as suggested, for them to keep or change before any photo is taken.
 2. **Only the photos the claims need.** A count needs the front and side; damage needs a close-up too. The listing's code goes on paper in the front photo.
 3. **Blind observation.** Muse Spark gets one photo at a time, a strict JSON schema and the nouns to count. It never gets the claim sentences or the claimed number, colour or condition. Its prompt says text in a photo is evidence, not instructions; the evaluation has one injection probe, which is not a guarantee.
 4. **Rules decide.** Plain Python compares each claim's type and value with the observations, and the sentence buyers read must name the same number or colour. A required photo that is blurry, dark or cut off, a count with no photo showing every piece, or a SAM count that disagrees with Spark makes the claim *can't tell*, with the photo that would help.
@@ -95,6 +95,7 @@ The two set-ups differ in their instructions as well as in who decides, so read 
 | Model | Role |
 |---|---|
 | **Muse Spark 1.3** (Meta API) | The observer: one photo at a time, strict JSON schema, claim-blind |
+| **Muse Spark 1.3** (Meta API, text only) | **Suggest claims**: turns the seller's description into claim rows they review. It never sees the photos, and runs at low reasoning effort (about 6 s and half a cent) |
 | **SAM 3.1** (Meta API) | Second-opinion piece counts on checks that count pieces: when it runs and disagrees with Spark, the claim can't be decided. It also boxes the damage Spark found, on the seller's page only (the report keeps the written description) |
 | **Muse Glimmer 30B** (local GPU) | Evaluation on the same observation prompt, with no API cost |
 

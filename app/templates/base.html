@@ -265,7 +265,7 @@ h2.pill { margin: 0 0 .6rem; font-size: .875rem; letter-spacing: 0; }
 .callout .ico { width: 1.5rem; height: 1.5rem; }
 .alert.wait, .callout.wait { color: var(--maybe); background: var(--maybe-bg); border-color: var(--maybe-line); }
 .alert.bad, .callout.bad { color: var(--no); background: var(--no-bg); border-color: var(--no-line); }
-.alert.sample { color: #CFC2FF; background: rgba(143, 102, 255, .12); border-color: rgba(143, 102, 255, .32); }
+.alert.sample, .alert.ai { color: #CFC2FF; background: rgba(143, 102, 255, .12); border-color: rgba(143, 102, 255, .32); }
 @media (max-width: 40em) { .alert { font-size: .875rem; padding: 10px 12px; } }
 .callout h2 { margin: 0 0 .3rem; color: inherit; font-size: 1.2rem; }
 .callout p { margin: 0; font-weight: 400; color: var(--ink); }
@@ -305,12 +305,26 @@ h2.pill { margin: 0 0 .6rem; font-size: .875rem; letter-spacing: 0; }
 .claim-row {
   display: grid; grid-template-columns: minmax(8em, 12em) minmax(0, 1fr); gap: .75rem; min-width: 0;
   padding: 14px; border-radius: 14px; background: var(--well); border: 1px solid var(--line);
-  transition: border-color .2s ease;
+  transition: border-color .2s ease; position: relative;
 }
 .claim-row:focus-within { border-color: rgba(143, 102, 255, .45); }
 .claim-row > * { min-width: 0; }
 .claim-row .what, .claim-row .value { display: none; }
 .claim-row input, .claim-row select { background: #09080E; }
+/* rows Muse Spark suggested from the description; the tag goes once the seller edits the row */
+.claim-rows:has(.ai-tag) { gap: 18px; }
+.claim-row.suggested { border-color: rgba(143, 102, 255, .38); }
+.ai-tag {
+  position: absolute; top: -.65rem; right: .9rem; display: inline-flex; align-items: center; gap: .25rem;
+  padding: .08rem .55rem .08rem .4rem; border-radius: 999px; font-size: .75rem; font-weight: 600; color: #fff;
+  background: linear-gradient(180deg, #7A4BFF 0%, #5A2AD8 100%); transition: opacity .2s ease;
+}
+.ai-tag .ico { width: .95rem; height: .95rem; }
+.claim-row:not(.suggested) .ai-tag { opacity: 0; }
+.suggest { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; }
+.suggest p { margin: 0; flex: 1 1 18rem; color: var(--mute); font-size: .875rem; }
+.suggest .ico { width: 1.1rem; height: 1.1rem; color: #B9A4FF; }
+.form-card .suggest + .alert { margin-top: 1rem; }
 .claim-row:has(option[value="piece_count"]:checked) { grid-template-columns: minmax(8em, 12em) minmax(0, 1fr) minmax(5em, 8em) minmax(4em, 5.5em); }
 .claim-row:has(option[value="piece_count"]:checked) :is(.what, .value),
 .claim-row:has(option[value="color"]:checked) .value { display: block; }
@@ -504,6 +518,7 @@ h2.pill { margin: 0 0 .6rem; font-size: .875rem; letter-spacing: 0; }
   <symbol id="i-photo" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="M3 6.5h3l1.3-2h5.4l1.3 2h3v9.5H3z"/><circle cx="10" cy="11" r="2.9" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
   <symbol id="i-eye" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z"/><circle cx="10" cy="10" r="2.4" fill="currentColor"/></symbol>
   <symbol id="i-rules" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M4 5.5h12M4 10h8M4 14.5h5"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="m12.5 14 1.8 1.8 3.2-3.6"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 20 20"><path fill="currentColor" d="M9 2.5c.55 3.7 1.8 4.95 5.5 5.5-3.7.55-4.95 1.8-5.5 5.5-.55-3.7-1.8-4.95-5.5-5.5 3.7-.55 4.95-1.8 5.5-5.5zm6 9c.3 1.8.95 2.45 2.75 2.75-1.8.3-2.45.95-2.75 2.75-.3-1.8-.95-2.45-2.75-2.75 1.8-.3 2.45-.95 2.75-2.75z"/></symbol>
   <symbol id="i-lock" viewBox="0 0 20 20"><rect x="4.5" y="9" width="11" height="8" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="none" stroke="currentColor" stroke-width="1.5" d="M7 9V6.8a3 3 0 0 1 6 0V9"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 4h8.2l7.8 7.8-8.2 8.2L4 12.2z"/><circle cx="8.3" cy="8.3" r="1.4" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m10 13 2.2 2.2 4.4-4.6"/></symbol>
 </svg>

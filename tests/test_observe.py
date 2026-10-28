@@ -314,3 +314,19 @@ def test_budget_rejection_does_not_consume_check_quota(photo, tmp_path):
         with module.listing_check(store, "listing"):
             assert not observer.observe([photo], ["chair"]).ok
     assert store.db.execute("SELECT * FROM paid_checks").fetchall() == []
+
+
+def test_only_claim_extraction_turns_reasoning_down(photo, tmp_path):
+    bodies = []
+
+    def handler(request):
+        bodies.append(json.loads(request.content))
+        if "Split this" in bodies[-1]["messages"][0]["content"][0]["text"]:
+            return response(json.dumps({"claims": []}))
+        return response()
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        SparkObserver("secret", client=client).observe([photo], ["chair"])
+        SparkObserver("secret", client=client).extract_claims("Chair", "2 chairs")
+        LocalObserver(client=client).extract_claims("Chair", "2 chairs")
+    assert [b.get("reasoning_effort") for b in bodies] == [None, "low", None]  # the evaluated observer is untouched

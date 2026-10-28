@@ -12,11 +12,17 @@
   <h1 class="display">Describe your item</h1>
   <p class="lede">Write what you'd tell a buyer. Next you'll take only the photos that back it up.</p>
 </div>
-<form method="post" action="/new" class="card form-card">
+<form method="post" action="/new" class="card form-card" id="describe">
   <label>Title <input name="title" value="{{ title }}" required maxlength="200" placeholder="Oak dining set with 4 chairs"></label>
-  <label>Description <textarea name="description" rows="4" maxlength="2000" placeholder="Anything else a buyer should know.">{{ description }}</textarea></label>
+  <label>Description <textarea name="description" rows="4" maxlength="2000" placeholder="Say it the way you'd tell a buyer: what it is, how many pieces, the colour, any marks.">{{ description }}</textarea></label>
+  <div class="suggest">
+    <button class="secondary" type="submit" formaction="/new/suggest#claims" formnovalidate><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-spark"/></svg><span>Suggest claims</span></button>
+    <p>Muse Spark turns your description into the claims below. It reads only your words, never your photos. Your keyboard's microphone can dictate them.</p>
+  </div>
+  {% if error %}<p class="alert bad" role="alert"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-alert"/></svg><span>{{ error }}</span></p>{% endif %}
   <input type="hidden" name="source" value="{{ source }}">
-  <h2>Your claims</h2>
+  <h2 id="claims">Your claims</h2>
+  {% if suggested %}<p class="alert ai" role="status"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-spark"/></svg><span>Muse Spark suggested these from your description. Check each one: change it, or clear its sentence to drop it. Nothing is saved until you continue.</span></p>{% endif %}
   {% include "_claim_rows.html" %}
   <div class="form-actions">
     <button class="big" type="submit">Continue to photos</button>
@@ -24,4 +30,20 @@
   </div>
 </form>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var form = document.getElementById("describe");
+  form.addEventListener("submit", function (e) {
+    if (e.submitter && e.submitter.formAction.indexOf("/suggest") > -1) {
+      e.submitter.disabled = true; e.submitter.lastChild.textContent = "Reading your description…";
+    }
+  });
+  // a suggestion the seller edits is theirs now: drop its tag
+  form.querySelectorAll(".claim-row.suggested").forEach(function (row) {
+    row.addEventListener("input", function () { row.classList.remove("suggested"); }, { once: true });
+  });
+})();
+</script>
 {% endblock %}

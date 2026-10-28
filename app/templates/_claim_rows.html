@@ -1,10 +1,10 @@
 <p class="soft">One claim per row. Things photos can't show, like "sturdy" or "works fine", go under "Other": they stay on the report, marked as not checkable.</p>
 {% set examples = [("piece_count", "Set of 4 chairs", "chair", "4"), ("color", "White finish", "", "white"),
                    ("no_visible_damage", "No scratches or stains", "", ""), ("uncheckable", "Solid oak, not veneer", "", "")] %}
-<div class="claim-rows">
+<div class="claim-rows"{% if suggested %} data-stagger{% endif %}>
 {% for i in rows %}{% set c = claims[i] if claims is defined and i < claims|length else none %}
 {% set ex = examples[i] if i < examples|length else ("uncheckable", "", "", "") %}{% set current = c.type if c else ex[0] %}
-<div class="claim-row">
+<div class="claim-row{% if suggested and c %} suggested{% endif %}">
   <label>Type
     <select name="type{{ i }}">
       {% for t in types %}<option value="{{ t }}" {% if current == t %}selected{% endif %}>{{ {"color": "Color", "piece_count": "Number of pieces", "no_visible_damage": "No visible damage", "uncheckable": "Other"}[t] }}</option>{% endfor %}
@@ -12,6 +12,8 @@
   <label class="text">Your claim <input name="text{{ i }}" placeholder="{{ ex[1] }}" value="{{ c.text if c else '' }}"></label>
   <label class="what">What to count <input name="subject{{ i }}" placeholder="{{ ex[2] }}" value="{{ c.subject if c else '' }}"></label>
   <label class="value">Value <input name="value{{ i }}" placeholder="{{ ex[3] }}" value="{{ c.value if c else '' }}"></label>
+  {#- last, so the Type label stays :first-child for the phone layout #}
+  {% if suggested and c %}<span class="ai-tag"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-spark"/></svg>Suggested</span>{% endif %}
 </div>
 {% endfor %}
 </div>

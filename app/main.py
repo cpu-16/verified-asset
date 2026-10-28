@@ -133,6 +133,41 @@ async def create(request: Request):
     return RedirectResponse(f"/l/{listing_id}?k={key}", status_code=303)
 
 
+SUGGESTIONS_PER_DAY = 20
+# ponytail: per address and in memory (a restart resets it); the daily spend cap is the real backstop
+_suggestions: dict[tuple[str, str], int] = {}
+
+
+def suggested_claims(request: Request, title: str, description: str) -> tuple[list[Claim], str]:
+    """Muse Spark reads only the seller's words and proposes claim rows; it never sees the photos."""
+    if not (title.strip() or description.strip()):
+        return [], "Write a title or a description first."
+    seen = (time.strftime("%Y-%m-%d"), request.client.host if request.client else "")
+    if _suggestions.get(seen, 0) >= SUGGESTIONS_PER_DAY:
+        return [], "That's the limit of suggestions for today. Fill in the claims yourself."
+    _suggestions[seen] = _suggestions.get(seen, 0) + 1
+    try:
+        observer = get_observer()
+    except ValueError:
+        return [], "Suggestions need the model, which isn't set up on this server. Fill in the claims yourself."
+    try:
+        claims = scan_claims(observer.extract_claims(title[:200], description[:2000]))[:CLAIM_ROWS]
+    except Exception as exc:  # network, spending cap or an invalid answer
+        return [], f"Muse Spark didn't answer ({type(exc).__name__}). Try again, or fill in the claims yourself."
+    if not claims:
+        return [], "Your description doesn't say anything a photo could check. Add the claims yourself."
+    return claims, ""
+
+
+@app.post("/new/suggest", response_class=HTMLResponse)
+def suggest(request: Request, title: str = Form(""), description: str = Form(""), source: str = Form("")):
+    claims, error = suggested_claims(request, title, description)
+    return templates.TemplateResponse(request, "new.html", {
+        "title": title[:200], "description": description[:2000], "source": source[:500],
+        "rows": range(CLAIM_ROWS), "types": list(ClaimType), "claims": claims, "suggested": bool(claims),
+        "error": error})
+
+
 @app.post("/sample")
 def create_sample():
     claims = [Claim("c1", ClaimType.PIECE_COUNT, "Set of 4 chairs", "chair", "4"),

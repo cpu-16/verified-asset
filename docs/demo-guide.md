@@ -95,6 +95,7 @@ The buyer never sees SAM's boxes or the seller's private page.
 3. The claim as you'd write it to a buyer.
 4. For a count, what to count ("chair", "shelf").
 5. The value to check: the number, or the color.
+6. **Suggest claims** fills the rows for you. Write or dictate the description the way you'd tell a buyer, press it, and Muse Spark turns your words into rows marked *Suggested*. It reads only the description, never the photos. Change or clear any row; nothing is saved until you continue. It takes about 6 seconds and needs the model key on the server.
 
 Then **Continue to photos** and follow steps 2 to 6 with your own item.
 

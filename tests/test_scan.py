@@ -123,3 +123,26 @@ def test_scan_without_piece_count_never_gets_sam(client, monkeypatch):
     monkeypatch.setattr(main, "get_sam", lambda: pytest.fail("SAM without piece-count claim"))
     r = c.post("/api/scan", json={"title": "White chair", "images": [data_url()]})
     assert r.status_code == 200
+
+
+def test_suggest_fills_rows_from_the_text_only(client):
+    main, c = client
+    main.app.state.observer = fake = FakeScanner(LISTING)
+    r = c.post("/new/suggest", data={"title": "Dining set", "description": "Comes with 4 chairs, white."})
+    assert r.status_code == 200
+    assert fake.seen_text == [("Dining set", "Comes with 4 chairs, white.")]
+    assert fake.seen_nouns == []  # no photos are looked at
+    assert r.text.count('class="claim-row suggested"') == 5
+    assert 'value="Comes with 4 chairs"' in r.text
+    assert "chair, there are 6" not in r.text  # a bad count subject is demoted to "Other"
+    assert not main.store.db.execute("SELECT 1 FROM listings").fetchall()  # nothing saved yet
+
+
+def test_suggest_fails_cleanly(client, monkeypatch):
+    main, c = client
+    assert "Suggestions need the model" in c.post("/new/suggest", data={"description": "4 chairs"}).text
+    assert "Write a title or a description" in c.post("/new/suggest", data={}).text
+    main.app.state.observer = FakeScanner([])
+    assert "anything a photo could check" in c.post("/new/suggest", data={"description": "Hi"}).text
+    monkeypatch.setattr(main, "SUGGESTIONS_PER_DAY", 0)
+    assert "limit of suggestions" in c.post("/new/suggest", data={"description": "4 chairs"}).text
