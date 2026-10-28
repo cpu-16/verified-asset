@@ -189,3 +189,128 @@ def test_environment_selection(monkeypatch, tmp_path):
     monkeypatch.setattr(app.observe, "_guard", None)  # the guard is shared per process
     observer = observer_from_env()
     assert type(observer) is SparkObserver and observer.guard.cap_usd == 5
+
+
+def test_cache_persists_shares_photos_and_invalidates(photo, tmp_path, monkeypatch):
+    import app.observe as module
+    calls = []
+    with httpx.Client(transport=httpx.MockTransport(lambda r: (calls.append(r), response())[1])) as client:
+        guard = SpendGuard(tmp_path / "spend.json", 1)
+        observer = SparkObserver("key", client=client, guard=guard)
+        assert observer.observe([photo] * 3, ["table", "chair"]).ok
+        assert len(calls) == 1
+        observer = SparkObserver("key", client=client, guard=SpendGuard(guard.path, 0))
+        other = Photo("other-listing", "side", photo.data)
+        result = observer.observe([other], ["chair", "table"])
+        assert result.ok and result.observations[0].photo_id == other.id
+        assert result.observations[0].slot == "side" and len(calls) == 1
+        observer.guard.cap_usd = 1
+        assert observer.observe([photo], ["chair"]).ok
+        observer.model = "another-model"
+        assert observer.observe([photo], ["chair"]).ok
+        monkeypatch.setattr(module, "PROMPT_VERSION", module.PROMPT_VERSION + 1)
+        assert observer.observe([photo], ["chair"]).ok
+        assert observer.observe([Photo("new", "front", image_bytes((40, 30)))], ["chair"]).ok
+        assert len(calls) == 5
+
+
+def test_failed_observations_are_not_cached(photo, tmp_path):
+    calls = []
+    with httpx.Client(transport=httpx.MockTransport(
+            lambda r: (calls.append(r), response("invalid"))[1])) as client:
+        observer = SparkObserver("key", client=client, guard=SpendGuard(tmp_path / "spend.json", 1))
+        assert not observer.observe([photo], ["chair"]).ok
+        assert not observer.observe([photo], ["chair"]).ok
+    assert len(calls) == 4
+
+
+def test_daily_cap_persists_resets_and_keeps_total(tmp_path, monkeypatch):
+    import app.observe as module
+    monkeypatch.setattr(module, "utc_day", lambda: "2026-10-27")
+    path = tmp_path / "spend.json"
+    guard = SpendGuard(path, 0.03, daily_usd=0.02)
+    guard.reserve(0.02)
+    guard.record(10, 5, 0.02)
+    with pytest.raises(BudgetExceeded, match="Daily"):
+        SpendGuard(path, 0.03, daily_usd=0.02).reserve(0.001)
+    monkeypatch.setattr(module, "utc_day", lambda: "2026-10-28")
+    guard.reserve(0.01)
+    guard.record(10, 5, 0.01)
+    state = json.loads(path.read_text())
+    assert state["day"] == "2026-10-28" and state["daily_spent_usd"] == 0.01
+    assert guard.spent_usd == pytest.approx(0.03)
+    with pytest.raises(BudgetExceeded, match="Spending cap"):
+        guard.reserve(0.001)
+
+
+def test_daily_reservations_shared_by_guard_instances(tmp_path, monkeypatch):
+    import app.observe as module
+    monkeypatch.setattr(module, "utc_day", lambda: "2026-10-27")
+    path = tmp_path / "spend.json"
+    guards = [SpendGuard(path, 1, daily_usd=0.015) for _ in range(3)]
+    barrier = Barrier(3)
+
+    def reserve(guard):
+        barrier.wait()
+        try:
+            guard.reserve(0.01)
+            return True
+        except BudgetExceeded:
+            return False
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        assert sum(pool.map(reserve, guards)) == 1
+    monkeypatch.setattr(module, "utc_day", lambda: "2026-10-28")
+    with pytest.raises(BudgetExceeded):
+        SpendGuard(path, 1, daily_usd=0.015).reserve(0.01)
+
+
+def test_old_spend_state_and_default_caps(tmp_path, monkeypatch):
+    import app.observe as module
+    path = tmp_path / "spend.json"
+    path.write_text(json.dumps({"spent_usd": 0.1, "reserved_usd": 0,
+                                "input_tokens": 100, "output_tokens": 20}))
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.delenv("SPEND_CAP_USD", raising=False)
+    monkeypatch.delenv("SPEND_DAILY_USD", raising=False)
+    monkeypatch.setattr(module, "_guard", None)
+    guard = module.shared_guard()
+    assert guard.cap_usd == 10 and guard.daily_usd == 2 and guard.spent_usd == 0.1
+
+
+def test_concurrent_checks_and_failed_calls_consume_quota(tmp_path, monkeypatch):
+    import app.observe as module
+    from app.store import Store
+    store = Store(tmp_path)
+    guard = SpendGuard(tmp_path / "spend.json", 1)
+    monkeypatch.setenv("CHECKS_PER_LISTING_PER_DAY", "2")
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        raise httpx.ReadTimeout("unknown billing", request=request)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        observer = SparkObserver("key", client=client, guard=guard)
+
+        def check(i):
+            with module.listing_check(store, "listing"):
+                return observer.observe([Photo(str(i), "front", image_bytes((30 + i, 20)))], ["chair"])
+
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            results = list(pool.map(check, range(6)))
+        assert not any(r.ok for r in results)
+        assert len(calls) == 2
+        assert sum("CheckLimitExceeded" in r.error for r in results) == 4
+        assert guard.spent_usd == pytest.approx(0.02)
+
+
+def test_budget_rejection_does_not_consume_check_quota(photo, tmp_path):
+    import app.observe as module
+    from app.store import Store
+    store = Store(tmp_path)
+    with httpx.Client(transport=httpx.MockTransport(lambda r: pytest.fail("paid call"))) as client:
+        observer = SparkObserver("key", client=client, guard=SpendGuard(tmp_path / "spend.json", 0))
+        with module.listing_check(store, "listing"):
+            assert not observer.observe([photo], ["chair"]).ok
+    assert store.db.execute("SELECT * FROM paid_checks").fetchall() == []

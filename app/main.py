@@ -145,7 +145,8 @@ async def upload(listing_id: str, k: str, slot: Slot = Form(...), file: UploadFi
 
 @app.post("/l/{listing_id}/check")
 def run_check(listing_id: str, k: str):
-    from .observe import Photo
+    from .observe import CheckLimitExceeded, Photo, listing_check
+    from .observation import CheckResult
     row = seller_listing(listing_id, k)
     version = store.latest_version(listing_id)
     claims = store.claims_of(version)
@@ -158,16 +159,21 @@ def run_check(listing_id: str, k: str):
                          "no model is configured on this server yet", [], [], 0)
         return RedirectResponse(f"/l/{listing_id}?k={k}#check", status_code=303)
     started = time.monotonic()
-    result = observer.observe(photos, count_subjects(claims))
     observations, verdicts = [], []
-    if result.ok:
-        obs = result.observations
-        sam = get_sam()
-        if sam is not None:
-            from .segment import enrich
-            obs = enrich(obs, photos, sam)
-        observations = [o.to_dict() for o in obs]
-        verdicts = [v.to_dict() for v in adjudicate(claims, obs)]
+    with listing_check(store, listing_id):
+        result = observer.observe(photos, count_subjects(claims))
+        if result.ok:
+            obs = result.observations
+            sam = get_sam() if count_subjects(claims) else None
+            try:
+                if sam is not None:
+                    from .segment import enrich
+                    obs = enrich(obs, photos, sam)
+            except CheckLimitExceeded as exc:
+                result = CheckResult(observer.name, False, error=str(exc))
+            if result.ok:
+                observations = [o.to_dict() for o in obs]
+                verdicts = [v.to_dict() for v in adjudicate(claims, obs)]
     latency = result.latency_ms or int((time.monotonic() - started) * 1000)
     store.save_check(version["id"], {s: p["id"] for s, p in current.items()}, observer.name,
                      result.ok, result.error, observations, verdicts, latency)
@@ -292,7 +298,7 @@ def seller_message(base: str, source: str, rows: list[dict]) -> str:
 
 def run_scan(title: str, description: str, images: list[bytes]) -> tuple[str, list[dict]]:
     """Text -> claims (text-only call), photos -> observations (never sees the text), rules decide.
-    Nothing is stored: the listing and its photos are only held for the request."""
+    Parsed model results are cached; raw listing text and photos are not stored."""
     from .observe import Photo, prepare_image
     if not 1 <= len(images) <= MAX_SCAN_PHOTOS:
         raise HTTPException(422, f"Send between 1 and {MAX_SCAN_PHOTOS} photos of the listing.")
@@ -317,7 +323,7 @@ def run_scan(title: str, description: str, images: list[bytes]) -> tuple[str, li
     if not result.ok:
         raise HTTPException(503, f"Looking at the photos failed ({result.error}). Try again.")
     obs = result.observations
-    sam = get_sam()
+    sam = get_sam() if count_subjects(claims) else None
     if sam is not None:
         from .segment import enrich
         obs = enrich(obs, photos, sam)

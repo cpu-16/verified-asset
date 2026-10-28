@@ -1,13 +1,15 @@
 """Optional SAM second opinions, with boxes in prepared-image pixel coordinates."""
 import base64
 from dataclasses import replace
+import hashlib
 import json
 import re
 
 import httpx
 
 from .observation import PhotoObservation
-from .observe import Photo, SpendGuard, prepare_image
+from .observe import CheckLimitExceeded, Photo, SpendGuard, prepare_image
+from .store import Store
 
 Box = tuple[int, int, int, int]
 
@@ -72,11 +74,18 @@ class SamCounter:
         self.timeout = timeout
         self.client = client
         self.guard = guard
+        self.cache = Store(guard.path.parent) if guard else None
 
     def count(self, image_bytes: bytes, noun: str) -> int:
         return len(self.boxes(image_bytes, noun))
 
     def boxes(self, image_bytes: bytes, phrase: str) -> list[Box]:
+        key = ["sam-3.1", hashlib.sha256(image_bytes).hexdigest(), phrase]
+        call = lambda: self._boxes(image_bytes, phrase)
+        boxes = self.cache.cached(key, call) if self.cache else call()
+        return [tuple(box) for box in boxes]
+
+    def _boxes(self, image_bytes: bytes, phrase: str) -> list[Box]:
         data, mime = prepare_image(image_bytes)
         body = {"model": "sam-3.1", "stream": True, "input": [{
             "role": "user", "content": [
@@ -134,6 +143,8 @@ def enrich(observations: list[PhotoObservation], photos: list[Photo],
                 boxes = sam.boxes(data, defect.kind)
                 defects.append(replace(defect, box=boxes[0] if boxes else None))
             enriched.append(replace(observation, counts=counts, defects=tuple(defects)))
+        except CheckLimitExceeded:
+            raise
         except Exception:
             # Enrichment is atomic per photo and never invalidates primary evidence.
             enriched.append(observation)

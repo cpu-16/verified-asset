@@ -152,3 +152,86 @@ def test_check_without_a_configured_model_fails_cleanly(client, monkeypatch):
     r = c.post(f"/l/{listing_id}/check?k={key}")
     assert r.status_code == 200 and "no model is configured" in r.text
     assert c.post(f"/l/{listing_id}/report?k={key}").status_code == 409
+
+
+def test_paid_check_limit_cache_and_utc_reset(client, tmp_path, monkeypatch):
+    import httpx
+    import app.observe as module
+    from test_observe import response
+    from test_segment import SAMPLE, stream
+    from app.segment import SamCounter
+
+    main, c = client
+    monkeypatch.setenv("CHECKS_PER_LISTING_PER_DAY", "1")
+    monkeypatch.setattr(module, "utc_day", lambda: "2026-10-27")
+    calls = []
+
+    def handler(request):
+        calls.append(request.url.path)
+        if request.url.path.endswith("responses"):
+            return stream([{"type": "response.output_text.delta", "delta": SAMPLE},
+                           {"type": "response.completed"}])
+        return response()
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as transport:
+        guard = module.SpendGuard(tmp_path / "spend.json", 1)
+        main.app.state.observer = module.SparkObserver("key", client=transport, guard=guard)
+        main.app.state.sam = SamCounter("key", client=transport, guard=guard)
+        listing_id, key = make_listing(c)
+        url = f"/l/{listing_id}/check?k={key}"
+        c.post(url, follow_redirects=False)
+        assert len(calls) == 2  # identical photos share Spark and SAM results
+        for _ in range(6):
+            c.post(url, follow_redirects=False)
+        assert len(calls) == 2
+        version = main.store.latest_version(listing_id)
+        assert main.store.latest_check(version["id"])["ok"]
+        main.store.add_photo(listing_id, "front", jpeg() + b"changed")
+        c.post(url, follow_redirects=False)
+        check = main.store.latest_check(version["id"])
+        assert not check["ok"]
+        assert "You've run 1 checks on this listing today. Try again tomorrow." in check["error"]
+        assert len(calls) == 2
+        # Editing and restarting the observer cannot reset the listing's quota.
+        main.store.edit_listing(listing_id, "Edited", "", main.store.claims_of(version))
+        main.app.state.observer = module.SparkObserver("key", client=transport, guard=guard)
+        c.post(url, follow_redirects=False)
+        assert len(calls) == 2
+        monkeypatch.setattr(module, "utc_day", lambda: "2026-10-28")
+        c.post(url, follow_redirects=False)
+        assert len(calls) == 4
+        other, other_key = make_listing(c)
+        c.post(f"/l/{other}/check?k={other_key}", follow_redirects=False)
+        assert len(calls) == 4  # shared across listings
+        assert main.store.db.execute("SELECT count FROM paid_checks WHERE listing_id=?",
+                                     (other,)).fetchone() is None
+
+
+def test_sam_only_cache_miss_obeys_listing_limit(client, tmp_path, monkeypatch):
+    import httpx
+    import app.observe as module
+    from test_observe import response
+    from app.segment import SamCounter
+
+    main, c = client
+    with httpx.Client(transport=httpx.MockTransport(lambda r: response())) as transport:
+        guard = module.SpendGuard(tmp_path / "spend.json", 1)
+        main.app.state.observer = module.SparkObserver("key", client=transport, guard=guard)
+        listing_id, key = make_listing(c)
+        url = f"/l/{listing_id}/check?k={key}"
+        c.post(url, follow_redirects=False)
+        monkeypatch.setenv("CHECKS_PER_LISTING_PER_DAY", "1")
+        main.app.state.sam = SamCounter("key", client=transport, guard=guard)
+        c.post(url, follow_redirects=False)
+        check = main.store.latest_check(main.store.latest_version(listing_id)["id"])
+        assert not check["ok"] and "Try again tomorrow" in check["error"]
+
+
+def test_no_piece_claim_never_gets_sam(client, monkeypatch):
+    main, c = client
+    main.app.state.observer = FakeObserver()
+    listing_id, key = make_listing(c)
+    c.post(f"/l/{listing_id}/edit?k={key}", data={"title": "Chair", "type0": "color",
+                                               "text0": "White", "value0": "white"})
+    monkeypatch.setattr(main, "get_sam", lambda: pytest.fail("SAM without piece-count claim"))
+    assert c.post(f"/l/{listing_id}/check?k={key}", follow_redirects=False).status_code == 303

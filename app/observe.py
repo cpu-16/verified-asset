@@ -1,6 +1,9 @@
 """Claim-blind photo observers and a persisted, thread-safe spending guard."""
 import base64
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from contextvars import ContextVar, copy_context
+from datetime import datetime, timezone
 from dataclasses import dataclass
 import hashlib
 from io import BytesIO
@@ -15,6 +18,14 @@ import httpx
 from PIL import Image, ImageOps
 
 from .observation import CheckResult, PhotoObservation, observation_schema
+from .store import Store, file_lock
+
+PROMPT_VERSION = 2  # Bump when observation_prompt or observation_schema changes.
+_before_paid_call = ContextVar("before_paid_call", default=None)
+
+
+def utc_day() -> str:
+    return datetime.now(timezone.utc).date().isoformat()
 
 
 @dataclass(frozen=True)
@@ -37,7 +48,7 @@ def prepare_image(data: bytes) -> tuple[bytes, str]:
 
 def observation_prompt(slot: str, count_nouns: list[str]) -> str:
     return (
-        f"Observe ONE photo of a second-hand item for sale ({slot} photo). "
+        "Observe ONE photo of a second-hand item for sale. "
         "Describe only visible evidence; never decide whether a seller's claim is true. "
         "Judge usability: use none, blurry, too_dark, item_cut_off, wrong_item, or too_far "
         "as usability_issue and set usable accordingly; a close-up meant to show part of the item "
@@ -81,6 +92,32 @@ class BudgetExceeded(RuntimeError):
     pass
 
 
+class CheckLimitExceeded(BudgetExceeded):
+    pass
+
+
+@contextmanager
+def listing_check(store: Store, listing_id: str):
+    charged_days = set()
+    lock = Lock()
+
+    def before_call():
+        with lock:
+            day = utc_day()
+            if day not in charged_days:
+                limit = int(os.getenv("CHECKS_PER_LISTING_PER_DAY", "5"))
+                if not store.claim_paid_check(listing_id, day, limit):
+                    raise CheckLimitExceeded(
+                        f"You've run {limit} checks on this listing today. Try again tomorrow.")
+                charged_days.add(day)
+
+    token = _before_paid_call.set(before_call)
+    try:
+        yield
+    finally:
+        _before_paid_call.reset(token)
+
+
 class SpendGuard:
     """Share one guard across callers. Outstanding reservations survive restarts.
 
@@ -88,20 +125,34 @@ class SpendGuard:
     request is conservatively charged at its estimate by the adapters.
     """
 
-    def __init__(self, path: str | Path, cap_usd: float):
-        if not math.isfinite(cap_usd) or cap_usd < 0:
+    def __init__(self, path: str | Path, cap_usd: float, daily_usd: float = 2):
+        if any(not math.isfinite(v) or v < 0 for v in (cap_usd, daily_usd)):
             raise ValueError("Spend cap must be finite and nonnegative")
         self.path = Path(path)
         self.cap_usd = cap_usd
+        self.daily_usd = daily_usd
         self._lock = Lock()
         self._thread = local()
         self._state = {"spent_usd": 0.0, "reserved_usd": 0.0,
-                       "input_tokens": 0, "output_tokens": 0}
+                       "input_tokens": 0, "output_tokens": 0,
+                       "day": utc_day(), "daily_spent_usd": 0.0}
         if self.path.exists():
             self._state.update(json.loads(self.path.read_text()))
-        for value in self._state.values():
+        for key, value in self._state.items():
+            if key == "day":
+                datetime.strptime(value, "%Y-%m-%d")
+                continue
             if not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
                 raise ValueError("Invalid persisted spending state")
+
+    @contextmanager
+    def _locked(self):
+        with self._lock, file_lock(self.path.with_suffix(".lock")):
+            if self.path.exists():
+                self._state.update(json.loads(self.path.read_text()))
+            if self._state["day"] != utc_day():
+                self._state.update(day=utc_day(), daily_spent_usd=0.0)
+            yield
 
     def _save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -111,16 +162,21 @@ class SpendGuard:
 
     @property
     def spent_usd(self) -> float:
-        with self._lock:
+        with self._locked():
             return self._state["spent_usd"]
 
     def reserve(self, estimate_usd: float) -> None:
         if not math.isfinite(estimate_usd) or estimate_usd < 0:
             raise ValueError("Estimate must be finite and nonnegative")
-        with self._lock:
+        with self._locked():
             total = self._state["spent_usd"] + self._state["reserved_usd"]
             if total + estimate_usd > self.cap_usd:
                 raise BudgetExceeded("Spending cap exceeded")
+            daily = self._state["daily_spent_usd"] + self._state["reserved_usd"]
+            if daily + estimate_usd > self.daily_usd:
+                raise BudgetExceeded("Daily spending cap exceeded")
+            if estimate_usd and (before_call := _before_paid_call.get()):
+                before_call()
             self._state["reserved_usd"] += estimate_usd
             self._thread.reserved = getattr(self._thread, "reserved", 0.0) + estimate_usd
             self._save()
@@ -129,11 +185,12 @@ class SpendGuard:
         if (type(input_tokens) is not int or type(output_tokens) is not int
                 or min(input_tokens, output_tokens) < 0 or not math.isfinite(usd) or usd < 0):
             raise ValueError("Invalid usage")
-        with self._lock:
+        with self._locked():
             reserved = getattr(self._thread, "reserved", 0.0)
             self._state["reserved_usd"] = max(0.0, self._state["reserved_usd"] - reserved)
             self._thread.reserved = 0.0
             self._state["spent_usd"] += usd
+            self._state["daily_spent_usd"] += usd
             self._state["input_tokens"] += input_tokens
             self._state["output_tokens"] += output_tokens
             self._save()
@@ -191,6 +248,7 @@ class SparkObserver:
         self.timeout = timeout
         self.client = client
         self.guard = guard
+        self.cache = Store(guard.path.parent) if guard else None
 
     @property
     def name(self) -> str:
@@ -229,13 +287,20 @@ class SparkObserver:
         raise ValueError(f"No valid {name}")
 
     def _photo(self, client: httpx.Client, photo: Photo, nouns: list[str]) -> PhotoObservation:
+        nouns = sorted(set(nouns))
+        key = [hashlib.sha256(photo.data).hexdigest(), nouns, self.model, PROMPT_VERSION]
+        call = lambda: self._observe_photo(client, photo, nouns)
+        parsed = self.cache.cached(key, call) if self.cache else call()
+        return PhotoObservation.from_model(photo.id, photo.slot, parsed)
+
+    def _observe_photo(self, client: httpx.Client, photo: Photo, nouns: list[str]) -> dict:
         data, mime = prepare_image(photo.data)
         parsed = self._call(client, [
             {"type": "text", "text": observation_prompt(photo.slot, nouns)},
             {"type": "image_url", "image_url": {
                 "url": f"data:{mime};base64,{base64.b64encode(data).decode()}"}},
         ], _strict_schema(nouns), "PhotoObservation")
-        return PhotoObservation.from_model(photo.id, photo.slot, parsed)
+        return parsed
 
     def extract_claims(self, title: str, description: str) -> list[dict]:
         """Text-only call: listing text -> typed claims. It never sees the photos."""
@@ -252,7 +317,9 @@ class SparkObserver:
         client = self.client or httpx.Client()
         try:
             with ThreadPoolExecutor(max_workers=self.concurrency) as pool:
-                observations = list(pool.map(lambda p: self._photo(client, p, count_nouns), photos))
+                futures = [pool.submit(copy_context().run, self._photo, client, p, count_nouns)
+                           for p in photos]
+                observations = [future.result() for future in futures]
             result = CheckResult(self.name, True, observations)
         except (httpx.HTTPError, OSError, KeyError, ValueError, TypeError, IndexError,
                 BudgetExceeded) as exc:
@@ -313,7 +380,8 @@ def shared_guard() -> SpendGuard:
     global _guard
     if _guard is None:
         _guard = SpendGuard(Path(os.getenv("DATA_DIR", "data")) / "spend.json",
-                            float(os.getenv("SPEND_CAP_USD", "25")))
+                            float(os.getenv("SPEND_CAP_USD", "10")),
+                            float(os.getenv("SPEND_DAILY_USD", "2")))
     return _guard
 
 

@@ -115,3 +115,11 @@ def test_scan_keeps_damage_seen_in_a_close_up():
            PhotoObservation(photo_id="p2", slot="listing 2", usable=False, usability_issue="item_cut_off",
                             defects=(Defect("scratch", "top edge"),))]
     assert scan(claims, obs)[0].status == Status.CONTRADICTED
+
+
+def test_scan_without_piece_count_never_gets_sam(client, monkeypatch):
+    main, c = client
+    main.app.state.observer = FakeScanner([LISTING[1], LISTING[2]])
+    monkeypatch.setattr(main, "get_sam", lambda: pytest.fail("SAM without piece-count claim"))
+    r = c.post("/api/scan", json={"title": "White chair", "images": [data_url()]})
+    assert r.status_code == 200

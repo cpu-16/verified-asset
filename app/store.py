@@ -4,6 +4,8 @@ only their state changes; every transition is written to an append-only event lo
 ponytail: one SQLite file in WAL mode and blobs on local disk; move to Postgres
 and object storage when one box is not enough.
 """
+from contextlib import closing, contextmanager
+import fcntl
 import hashlib
 import json
 import secrets
@@ -16,6 +18,11 @@ from .catalog import Claim
 CODE_ALPHABET = "ACDEFGHJKMNPQRTUVWXY34679"  # no look-alikes (0/O, 1/I/L, 2/Z, 5/S, 8/B)
 
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS model_cache (
+  key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS paid_checks (
+  listing_id TEXT NOT NULL, day TEXT NOT NULL, count INTEGER NOT NULL,
+  PRIMARY KEY (listing_id, day));
 CREATE TABLE IF NOT EXISTS listings (
   id TEXT PRIMARY KEY, seller_key TEXT NOT NULL, capture_code TEXT NOT NULL, source_url TEXT,
   sample INTEGER DEFAULT 0, created_at TEXT NOT NULL);
@@ -44,8 +51,20 @@ def now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+@contextmanager
+def file_lock(path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
+
 class Store:
     def __init__(self, data_dir: Path):
+        self.data_dir = data_dir
         self.blobs = data_dir / "blobs"
         self.blobs.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(data_dir / "verified-asset.db", check_same_thread=False,
@@ -54,6 +73,27 @@ class Store:
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA foreign_keys=ON")
         self.db.executescript(SCHEMA)
+
+    def cached(self, key: list, call):
+        """Persist successful results; concurrent misses share one call."""
+        digest = hashlib.sha256(json.dumps(key).encode()).hexdigest()
+        with file_lock(self.data_dir / "cache-locks" / digest[:2]):
+            with closing(sqlite3.connect(self.data_dir / "verified-asset.db",
+                                         isolation_level=None)) as db:
+                row = db.execute("SELECT value FROM model_cache WHERE key=?", (digest,)).fetchone()
+                if row is not None:
+                    return json.loads(row[0])
+                value = call()
+                db.execute("INSERT INTO model_cache VALUES (?,?)", (digest, json.dumps(value)))
+                return value
+
+    def claim_paid_check(self, listing_id: str, day: str, limit: int) -> bool:
+        with closing(sqlite3.connect(self.data_dir / "verified-asset.db",
+                                     isolation_level=None)) as db:
+            return db.execute(
+                "INSERT INTO paid_checks SELECT ?,?,1 WHERE ? > 0 "
+                "ON CONFLICT(listing_id,day) DO UPDATE SET count=count+1 WHERE count < ? "
+                "RETURNING count", (listing_id, day, limit, limit)).fetchone() is not None
 
     def log(self, listing_id: str | None, kind: str, **detail):
         self.db.execute("INSERT INTO events (listing_id, kind, detail, at) VALUES (?,?,?,?)",

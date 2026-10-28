@@ -99,3 +99,27 @@ def test_enrich_is_atomic_per_photo_and_preserves_original(fail):
         assert result is observation
     else:
         assert result.counts[0].sam_count == 3 and result.defects[0].box == (1, 2, 3, 4)
+
+
+def test_sam_cache_persists_and_keys_on_photo_and_noun(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return stream([{"type": "response.output_text.delta", "delta": SAMPLE},
+                       {"type": "response.completed"}])
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        guard = SpendGuard(tmp_path / "spend.json", 1)
+        sam = SamCounter("key", client=client, guard=guard)
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            assert list(pool.map(lambda _: sam.count(image_bytes(), "chair"), range(3))) == [2] * 3
+        assert len(calls) == 1
+        sam = SamCounter("key", client=client, guard=SpendGuard(guard.path, 0))
+        assert sam.boxes(image_bytes(), "chair") == parse_boxes(SAMPLE)
+        assert len(calls) == 1
+        sam.guard.cap_usd = 1
+        assert sam.count(image_bytes(), "table") == 2
+        assert sam.count(image_bytes() + b"changed", "chair") == 2
+        assert len(calls) == 3
