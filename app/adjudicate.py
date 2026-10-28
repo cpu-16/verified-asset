@@ -131,7 +131,7 @@ def _count(claim: Claim, views: list[PhotoObservation]) -> Verdict:
     if any(c.count == claimed for _, c in full):
         o = next(o for o, c in full if c.count == claimed)
         return Verdict(claim.id, Status.SUPPORTED, "COUNT_MATCH",
-                       f"The {o.slot} photo shows all {claimed} {plural(claim.subject, claimed)}.", (o.photo_id,))
+                       f"The {o.slot} photo shows " + (f"the {claim.subject}." if claimed == 1 else f"all {claimed} {plural(claim.subject, claimed)}."), (o.photo_id,))
     if full:
         o, c = max(full, key=lambda oc: oc[1].count)
         return Verdict(claim.id, Status.CONTRADICTED, "COUNT_MISMATCH",
