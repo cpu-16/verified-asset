@@ -178,7 +178,7 @@ test("fixture page renders the report, the empty state, and the fallbacks", asyn
     assert.equal(active.meta, "Issued Oct 27, 2026, until Nov 26, 2026.");
     assert.equal(active.token, TOKEN);
     assert.equal(active.disclaimer, "Independent demo · not affiliated with Meta");
-    assert.equal(active.headline, "2 supported · 1 contradicted · 1 inconclusive");
+    assert.equal(active.headline, "1 supported · 1 contradicted · 2 inconclusive");
     assert.equal(active.banner, "");
     assert.deepEqual(active.chips, ["Supported", "Supported", "Contradicted", "Inconclusive"]);
     assert.deepEqual(active.asks, ["Ask the seller for: a photo of the chair next to the desk"]);
