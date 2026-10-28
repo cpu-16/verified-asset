@@ -7,7 +7,7 @@ SSH=(ssh -J prox -i ~/.ssh/id_ed25519_homelab "$TARGET")
 cd "$(git rev-parse --show-toplevel)"
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
-git archive HEAD app pyproject.toml uv.lock deploy/verified-asset.service | tar -x -C "$STAGE"
+git archive HEAD app eval/photos eval/recordings pyproject.toml uv.lock deploy/verified-asset.service | tar -x -C "$STAGE"
 git rev-parse --short HEAD > "$STAGE/REVISION"
 rsync -a --delete -e "ssh -J prox -i $HOME/.ssh/id_ed25519_homelab" --exclude deploy \
   "$STAGE"/ "$TARGET":/opt/verified-asset/app/
