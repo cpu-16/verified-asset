@@ -1,8 +1,54 @@
 {% extends "base.html" %}
 {% block main %}
-<h1>Show buyers which of your claims your photos back up.</h1>
-<p class="lede">Write your claims, take the photos we ask for with a one-time code on paper, and share a report link.
-Each claim comes back supported, contradicted, or marked as something photos can't show.</p>
-<section class="stamp"><p>Meta's Muse Spark describes your photos without seeing your claims. Fixed rules compare the two, and the report can't be changed after it's issued.</p></section>
-<p><a class="button" href="/new">Start a report</a></p>
+<section class="hero">
+  <div class="hero-copy">
+    <h1>Show buyers which of your claims your photos back up.</h1>
+    <p class="lede">Write your claims, take the photos we ask for with a one-time code on paper, and share a report link.
+    Each claim comes back supported, contradicted, or marked as something photos can't show.</p>
+    <p>Meta's Muse Spark describes your photos without seeing your claims. Fixed rules compare the two, and the report can't be changed after it's issued.</p>
+    <p><a class="button" href="/new">Start a report</a></p>
+  </div>
+  <aside class="card example" aria-label="Example evidence report">
+    <p class="example-flag">Example</p>
+    <p class="soft">Sample data, not a real report.</p>
+    <p class="kicker">Evidence report</p>
+    <h2>Oak dining set with 4 chairs</h2>
+    <div class="validity">
+      <div class="validity-copy">
+        <p class="pill supported"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-check"/></svg>Valid until 26 Nov 2026</p>
+        <p>The seller's one-time code for this listing was on paper in the photos, which makes reused or downloaded photos unlikely. It doesn't show who owns the item.</p>
+      </div>
+      <span class="slip" aria-label="Example capture code 4F7Q">4F7Q</span>
+    </div>
+    <ul class="counts">
+      <li><b>1</b> contradicted</li>
+      <li><b>1</b> supported</li>
+      <li><b>1</b> can't be checked from photos</li>
+    </ul>
+    <ul class="verdicts">
+      <li class="verdict contradicted">
+        <span class="pill contradicted"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-x"/></svg>Contradicted</span>
+        <div>
+          <p class="claim">Set of 6 chairs</p>
+          <p class="why">The front photo shows 4 chairs.</p>
+          <p class="ask"><span class="ask-label">What would settle it:</span> A photo that shows every chair.</p>
+        </div>
+      </li>
+      <li class="verdict supported">
+        <span class="pill supported"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-check"/></svg>Supported</span>
+        <div>
+          <p class="claim">White finish</p>
+          <p class="why">The front photo shows a white surface.</p>
+        </div>
+      </li>
+      <li class="verdict inconclusive">
+        <span class="pill inconclusive"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-ask"/></svg>Inconclusive</span>
+        <div>
+          <p class="claim">Solid oak, not veneer</p>
+          <p class="why">Photos can't show what the wood is under the finish.</p>
+        </div>
+      </li>
+    </ul>
+  </aside>
+</section>
 {% endblock %}

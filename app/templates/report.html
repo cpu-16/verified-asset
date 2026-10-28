@@ -7,62 +7,133 @@
 <meta property="og:url" content="{{ url }}">
 {% endblock %}
 {% block main %}
-<p class="soft">Evidence report for</p>
-<h1>{{ payload.title }}</h1>
-
 {% if state != "active" %}
-<section class="stamp void">
-  <h2>{{ {"invalidated": "No longer valid", "revoked": "Withdrawn", "expired": "Expired"}[state] }}</h2>
-  <p>{{ {"invalidated": "The seller changed the listing after this report was issued, so it no longer vouches for it.",
-         "revoked": "The seller withdrew this report.",
-         "expired": "Reports are valid for 30 days. This one ended on " ~ (payload.expires_at|day) ~ "."}[state] }}
-  Ask the seller for a new report.</p>
-</section>
+<div class="state-page">
+<article class="card">
+  <p class="kicker">Evidence report</p>
+  <h1>{{ payload.title }}</h1>
+  <div class="callout {{ 'wait' if state == 'expired' else 'bad' }}">
+    <svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#{{ 'i-alert' if state == 'expired' else 'i-x' }}"/></svg>
+    <div>
+      <h2>{{ {"invalidated": "No longer valid", "revoked": "Withdrawn", "expired": "Expired"}[state] }}</h2>
+      <p>{{ {"invalidated": "The seller changed the listing after this report was issued, so it no longer vouches for it.",
+             "revoked": "The seller withdrew this report.",
+             "expired": "Reports are valid for 30 days. This one ended on " ~ (payload.expires_at|day) ~ "."}[state] }}
+      Ask the seller for a new report.</p>
+    </div>
+  </div>
+</article>
+</div>
 {% else %}
-<section class="stamp" aria-label="Report status">
-  <h2>Valid until {{ payload.expires_at|day }}</h2>
-  {% if payload.capture_code %}
-  <p>The seller's one-time code for this listing was on paper in the photos, which makes reused or downloaded photos unlikely. It doesn't show who owns the item.</p>
-  <span class="slip" aria-label="Capture code {{ payload.capture_code }}">{{ payload.capture_code }}</span>
-  {% else %}
-  <p>The seller's one-time code wasn't visible, so these photos could be older or taken elsewhere.</p>
+<div class="report">
+{% if photos %}
+{% set ns = namespace(items=[]) %}
+{% for name in ["front", "side", "detail"] %}
+  {% for slot, src in photos if slot == name %}{% set ns.items = ns.items + [(slot, src)] %}{% endfor %}
+{% endfor %}
+{% for slot, src in photos if slot not in ["front", "side", "detail"] %}{% set ns.items = ns.items + [(slot, src)] %}{% endfor %}
+<section class="gallery" id="gallery" aria-labelledby="photos-heading">
+  <h2 id="photos-heading" class="sr">What the photos show</h2>
+  <div class="stage">
+  {% for slot, src in ns.items %}
+    <figure class="slide" id="photo-{{ slot }}">
+      <img src="{{ src }}" alt="{{ slot|capitalize }} photo checked for this report">
+      <figcaption>{{ slot|capitalize }}</figcaption>
+    </figure>
+  {% endfor %}
+  </div>
+  {% if photos|length > 1 %}
+  <div class="thumbs">
+    {% for slot, src in ns.items %}
+    <a class="thumb" href="#photo-{{ slot }}" data-target="photo-{{ slot }}">
+      <img src="{{ src }}" alt="">
+      <span class="sr">Show {{ slot }} photo</span>
+    </a>
+    {% endfor %}
+  </div>
   {% endif %}
 </section>
-
-<h2>What the photos show</h2>
-{% if photos %}<div class="slots">{% for slot, src in photos %}
-  <figure><img src="{{ src }}" alt="{{ slot|capitalize }} photo checked for this report" loading="lazy"><figcaption class="soft">{{ slot|capitalize }}</figcaption></figure>
-{% endfor %}</div>{% endif %}
-<p class="tally">
-  {% if summary.contradicted %}<span><b>{{ summary.contradicted }}</b> contradicted</span>{% endif %}
-  <span><b>{{ summary.supported }}</b> supported</span>
-  <span><b>{{ summary.inconclusive }}</b> can't be checked from photos</span>
-</p>
-<div class="sheet">
-<ul class="verdicts">
-{% for status in ["contradicted", "supported", "inconclusive"] %}{% for c in payload.claims if c.verdict.status == status %}
-  <li class="verdict {{ status }}">
-    <span class="mark">{{ status|capitalize }}</span>
-    <div>
-      <p class="claim">{{ c.text }}</p>
-      <p class="why">{{ c.verdict.detail }}</p>
-      {% if c.verdict.request %}<p class="ask">What would settle it: {{ c.verdict.request }}</p>{% endif %}
+{% endif %}
+<article class="card panel">
+  <p class="kicker">Evidence report</p>
+  <h1>{{ payload.title }}</h1>
+  <div class="validity">
+    <div class="validity-copy">
+      <h2 class="pill supported"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-check"/></svg>Valid until {{ payload.expires_at|day }}</h2>
+      {% if payload.capture_code %}
+      <p>The seller's one-time code for this listing was on paper in the photos, which makes reused or downloaded photos unlikely. It doesn't show who owns the item.</p>
+      {% else %}
+      <p>The seller's one-time code wasn't visible, so these photos could be older or taken elsewhere.</p>
+      {% endif %}
     </div>
-  </li>
-{% endfor %}{% endfor %}
-</ul>
+    {% if payload.capture_code %}
+    <span class="slip" aria-label="Capture code {{ payload.capture_code }}">{{ payload.capture_code }}</span>
+    {% endif %}
+  </div>
+  <ul class="counts">
+    {% if summary.contradicted %}<li><b>{{ summary.contradicted }}</b> contradicted</li>{% endif %}
+    <li><b>{{ summary.supported }}</b> supported</li>
+    <li><b>{{ summary.inconclusive }}</b> can't be checked from photos</li>
+  </ul>
+  <ul class="verdicts">
+  {% for status in ["contradicted", "supported", "inconclusive"] %}{% for c in payload.claims if c.verdict.status == status %}
+    <li class="verdict {{ status }}">
+      <span class="pill {{ status }}"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#{{ {'supported': 'i-check', 'contradicted': 'i-x', 'inconclusive': 'i-ask'}[status] }}"/></svg>{{ status|capitalize }}</span>
+      <div>
+        <p class="claim">{{ c.text }}</p>
+        <p class="why">{{ c.verdict.detail }}</p>
+        {% if c.verdict.request %}<p class="ask"><span class="ask-label">What would settle it:</span> {{ c.verdict.request }}</p>{% endif %}
+      </div>
+    </li>
+  {% endfor %}{% endfor %}
+  </ul>
+  <div class="limits">
+    <h2>What this report can't tell you</h2>
+    <p>{{ payload.limits }} Issued {{ payload.issued_at|day }}.</p>
+  </div>
+  <details class="fingerprint">
+    <summary>Check that this report hasn't been altered</summary>
+    <p class="soft">The fingerprint below is computed from everything in this report. Any change to it, or to the photos
+    it was checked against, gives a different fingerprint.</p>
+    <p class="mono">Report fingerprint (SHA-256)<br>{{ digest }}</p>
+    {% for slot, sha in payload.photos.items() %}<p class="mono">{{ slot|capitalize }} photo<br>{{ sha }}</p>{% endfor %}
+    <p class="mono">Listing version {{ payload.listing_version }}, rules {{ payload.rules_version }}, observer {{ payload.observer }}</p>
+  </details>
+</article>
 </div>
-
-<h2>What this report can't tell you</h2>
-<p>{{ payload.limits }} Issued {{ payload.issued_at|day }}.</p>
-
-<details class="sheet">
-  <summary>Check that this report hasn't been altered</summary>
-  <p class="soft">The fingerprint below is computed from everything in this report. Any change to it, or to the photos
-  it was checked against, gives a different fingerprint.</p>
-  <p class="mono">Report fingerprint (SHA-256)<br>{{ digest }}</p>
-  {% for slot, sha in payload.photos.items() %}<p class="mono">{{ slot|capitalize }} photo<br>{{ sha }}</p>{% endfor %}
-  <p class="mono">Listing version {{ payload.listing_version }}, rules {{ payload.rules_version }}, observer {{ payload.observer }}</p>
-</details>
+<script>
+(function () {
+  var g = document.getElementById("gallery");
+  if (!g || !window.matchMedia) return;
+  var slides = g.querySelectorAll(".slide");
+  var thumbs = g.querySelectorAll(".thumb");
+  var wide = window.matchMedia("(min-width: 40.01em)");
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  function applyMode() {
+    if (wide.matches) g.classList.add("single");
+    else g.classList.remove("single");
+  }
+  function select(id, doScroll) {
+    for (var i = 0; i < slides.length; i++) slides[i].classList.toggle("on", slides[i].id === id);
+    for (var j = 0; j < thumbs.length; j++) {
+      if (thumbs[j].getAttribute("data-target") === id) thumbs[j].setAttribute("aria-current", "true");
+      else thumbs[j].removeAttribute("aria-current");
+    }
+    if (doScroll) {
+      var el = document.getElementById(id);
+      if (el && el.scrollIntoView) el.scrollIntoView({ inline: "start", block: "nearest", behavior: reduce.matches ? "auto" : "smooth" });
+    }
+  }
+  applyMode();
+  if (slides.length) select(slides[0].id, false);
+  if (wide.addEventListener) wide.addEventListener("change", applyMode);
+  for (var k = 0; k < thumbs.length; k++) {
+    thumbs[k].addEventListener("click", function (e) {
+      e.preventDefault();
+      select(this.getAttribute("data-target"), !wide.matches);
+    });
+  }
+})();
+</script>
 {% endif %}
 {% endblock %}
