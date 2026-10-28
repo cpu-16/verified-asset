@@ -63,7 +63,7 @@ This page's link is private: anyone with it can edit the listing, which is why t
 2. The counts: contradicted, supported, inconclusive.
 3. Each claim with its verdict, contradicted first.
 4. The photos the verdicts are about. On a phone they swipe.
-5. **Check that this report hasn't been altered** opens the SHA-256 fingerprint of the report and of every photo, so anyone can confirm nothing changed after it was issued.
+5. **Is this report genuine?** shows an eight-character report code, also visible in the header. Ask for the link on verified.adwentech.com if given a screenshot, compare the code and check the current validity. The section explains when the check ran, which photos it covered, expiration, the model and the rule-set date. Times display in the reader's local timezone, with UTC as the no-JavaScript fallback. Text edits here invalidate the report; replacing a photo leaves the report tied to its original photos. **Technical details** contains the full report and photo SHA-256 codes and listing version. The public API does not expose the complete payload for independent recalculation; a matching short code alone is not proof of authenticity.
 
 The buyer never sees SAM's boxes or the seller's private page.
 

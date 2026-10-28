@@ -191,6 +191,9 @@ class Store:
                          json.dumps(observations), json.dumps(verdicts), latency_ms, now()))
         return check_id
 
+    def check(self, check_id: str):
+        return self.db.execute("SELECT * FROM checks WHERE id=?", (check_id,)).fetchone()
+
     def latest_check(self, version_id: int):
         return self.db.execute("SELECT * FROM checks WHERE version_id=? ORDER BY created_at DESC, rowid DESC"
                                " LIMIT 1", (version_id,)).fetchone()

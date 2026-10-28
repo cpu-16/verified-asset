@@ -42,6 +42,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["https://www.facebook.com"],
                    allow_methods=["GET"])  # the browser extension reads /api/r/* from Marketplace
 templates = Jinja2Templates(directory=BASE / "templates")
 templates.env.filters["day"] = lambda iso: datetime.fromisoformat(iso).strftime("%-d %b %Y")
+templates.env.filters["timestamp"] = lambda iso: datetime.fromisoformat(iso).astimezone(timezone.utc).strftime("%-d %b %Y, %H:%M:%S UTC")
 app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
 # the CDN caches static files for days: a content hash in the URL makes a new deploy show up at once
 templates.env.globals["v"] = hashlib.sha256(b"".join(
@@ -420,6 +421,7 @@ def report_page(request: Request, token: str):
         if view["state"] == "active" else []
     return templates.TemplateResponse(request, "report.html", {
         **view, "token": token, "summary": reports.summary(view["payload"]),
+        "checked_at": store.check(row["check_id"])["created_at"],
         "url": str(request.url), "photos": photos,
         "image": f"{request.base_url}r/{token}/photo/front" if any(s == "front" for s, _ in photos) else ""})
 

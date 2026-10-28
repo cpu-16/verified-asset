@@ -8,6 +8,7 @@
 {% if image %}<meta property="og:image" content="{{ image }}">{% endif %}
 {% endblock %}
 {% block main %}
+{% set short_code = (digest[:4] ~ " " ~ digest[4:8])|upper %}
 {% if payload.sample %}<p class="alert sample" role="note"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-info"/></svg><span>Sample report: recorded Muse Spark observations of test photos, not a real listing.</span></p>{% endif %}
 {% if state != "active" %}
 <div class="state-page">
@@ -15,6 +16,7 @@
   <span class="state-ico {{ 'wait' if state == 'expired' else 'bad' }}"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#{{ 'i-alert' if state == 'expired' else 'i-x' }}"/></svg></span>
   <p class="kicker">Evidence report</p>
   <h1>{{ payload.title }}</h1>
+  <p class="soft">Report code <span class="mono">{{ short_code }}</span></p>
   <div class="callout {{ 'wait' if state == 'expired' else 'bad' }}">
     <div>
       <h2>{{ {"invalidated": "No longer valid", "revoked": "Withdrawn", "expired": "Expired"}[state] }}</h2>
@@ -59,6 +61,7 @@
 <article class="card panel">
   <p class="kicker">Evidence report</p>
   <h1>{{ payload.title }}</h1>
+  <p class="soft">Report code <span class="mono">{{ short_code }}</span></p>
   <div class="validity">
     <div class="validity-copy">
       <h2 class="pill supported"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-check"/></svg>Valid until {{ payload.expires_at|day }}</h2>
@@ -99,17 +102,45 @@
     <p>{{ payload.limits }} Issued {{ payload.issued_at|day }}.</p>
   </div>
   <details class="fingerprint">
-    <summary>Check that this report hasn't been altered</summary>
-    <p class="soft">The fingerprint below is computed from everything in this report. Any change to it, or to the photos
-    it was checked against, gives a different fingerprint.</p>
-    <p class="mono">Report fingerprint (SHA-256)<br>{{ digest }}</p>
-    {% for slot, sha in payload.photos.items() %}<p class="mono">{{ slot|capitalize }} photo<br>{{ sha }}</p>{% endfor %}
-    <p class="mono">Listing version {{ payload.listing_version }}, rules {{ payload.rules_version }}, observer {{ payload.observer }}</p>
+    <summary>Is this report genuine?</summary>
+    <p>Report code <strong class="mono report-code">{{ short_code }}</strong></p>
+    <p>Only trust this report when opened from its link on <strong>verified.adwentech.com</strong>.
+    If the seller sends a screenshot, ask for the link and check that the code matches.</p>
+    <p>{{ "Sample replayed on" if payload.observer.startswith("replay") else "Checked on" }}
+    <time datetime="{{ checked_at }}" data-local-time>{{ checked_at|timestamp }}</time>
+    against {{ payload.photos|length }} {{ "photo" if payload.photos|length == 1 else "photos" }}:
+    {% for slot in ["front", "side", "detail"] if slot in payload.photos %}{{ slot }}{{ ", " if not loop.last else "." }}{% endfor %}
+    Valid until <time datetime="{{ payload.expires_at }}" data-local-time>{{ payload.expires_at|timestamp }}</time>.</p>
+    <p>It covers version {{ payload.listing_version }} of the listing and only the photos shown here.
+    If the seller edits the listing text, this report is marked “No longer valid”; photos added later are not covered.
+    Changes made on other sites can't be detected.</p>
+    <p>{% if payload.observer.startswith("replay of muse-spark-1.3") %}Meta's Muse Spark 1.3 model, using recorded sample observations, not a live check.
+    {% elif payload.observer == "muse-spark-1.3 (live)" %}Meta's Muse Spark 1.3 model, checked live.
+    {% elif payload.observer == "muse-glimmer-30b (local)" %}Meta's Muse Glimmer 30B model, checked locally.
+    {% else %}Photo reviewer: {{ payload.observer }}.
+    {% endif %}The model described the photos; the rule set of {{ payload.rules_version[:10]|day }} compared those observations with the claims.</p>
+    <details class="fingerprint">
+      <summary>Technical details</summary>
+      <p>SHA-256 is a code calculated from exact bytes: the same file gives the same code;
+      changing a pixel or a word gives a completely different code.
+      Photo codes cover the stored files, after upload processing. The report code covers its canonical JSON data,
+      including those photo codes, rather than this web page.</p>
+      <p class="mono">Report fingerprint (SHA-256)<br>{{ digest }}</p>
+      {% for slot, sha in payload.photos.items() %}<p class="mono">{{ slot|capitalize }} photo (SHA-256)<br>{{ sha }}</p>{% endfor %}
+      <p class="mono">Listing version {{ payload.listing_version }}, rules {{ payload.rules_version }}, observer {{ payload.observer }}</p>
+      <p>The public API does not provide the complete report data needed to recalculate its fingerprint.</p>
+    </details>
   </details>
 </article>
 </div>
 <script>
 (function () {
+  document.querySelectorAll("time[data-local-time]").forEach(function (el) {
+    var date = new Date(el.dateTime);
+    if (!isNaN(date.getTime())) el.textContent = date.toLocaleString("en", {
+      day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short"
+    });
+  });
   var g = document.getElementById("gallery");
   if (!g || !window.matchMedia) return;
   var slides = g.querySelectorAll(".slide");

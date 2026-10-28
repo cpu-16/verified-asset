@@ -73,7 +73,15 @@ def test_full_lifecycle(client):
     api = c.get(f"/api/r/{token}").json()
     assert api["state"] == "active"
     assert [v["status"] for v in api["verdicts"]] == ["supported", "supported", "inconclusive"]
-    assert "Report fingerprint (SHA-256)" in c.get(f"/r/{token}").text
+    page = c.get(f"/r/{token}").text
+    short_code = f"{api['digest'][:4]} {api['digest'][4:8]}".upper()
+    assert f'<span class="mono">{short_code}</span>' in page  # visible in the header
+    assert f'<strong class="mono report-code">{short_code}</strong>' in page
+    assert "Is this report genuine?" in page and "Technical details" in page
+    assert "Report fingerprint (SHA-256)" in page
+    checked_at = main.store.latest_check(main.store.latest_version(listing_id)["id"])["created_at"]
+    assert f'<time datetime="{checked_at}" data-local-time>' in page
+    assert "against 2 photos:" in page
 
     # editing the listing kills the old link, which then shows only its state
     c.post(f"/l/{listing_id}/edit?k={key}", data={"title": "Dining set", "type0": "color",
