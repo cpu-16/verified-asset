@@ -148,7 +148,7 @@ async def main():
         mark(raw, [(1, await box(pg, "input[name=title]")), (2, await box(pg, ".claim-row select")),
                    (3, await box(pg, ".claim-row .text")), (4, await box(pg, ".claim-row .what")),
                    (5, await box(pg, ".claim-row .value")), (6, await box(pg, ".suggest button"))],
-             (0, 70, W, rows[1] + 300), "10-new")
+             (0, (await box(pg, ".steps"))[1] - 28, W, rows[1] + 300), "10-new")
 
         await b.close()
     for f in OUT.glob("raw-*.png"):
