@@ -89,7 +89,8 @@ def test_active_report_shows_the_checked_photos(client):
     listing_id, key = make_listing(c)
     c.post(f"/l/{listing_id}/check?k={key}")
     token = c.post(f"/l/{listing_id}/report?k={key}", follow_redirects=False).headers["location"].rsplit("/", 1)[1]
-    assert f"/r/{token}/photo/front" in c.get(f"/r/{token}").text
+    page = c.get(f"/r/{token}").text
+    assert f"/r/{token}/photo/front" in page and f'og:image" content="http://testserver/r/{token}/photo/front"' in page
     r = c.get(f"/r/{token}/photo/front")
     assert r.status_code == 200 and r.headers["content-type"] == "image/jpeg"
     assert c.get(f"/r/{token}/photo/detail").status_code == 404
@@ -255,3 +256,17 @@ def test_sam_boxes_show_only_on_the_seller_page(client):
     assert 'class="sam-box" style="left:25.00%;top:25.00%;width:50.00%;height:25.00%"' in page
     token = c.post(f"/l/{listing_id}/report?k={key}", follow_redirects=False).headers["location"].rsplit("/", 1)[1]
     assert 'class="sam-box"' not in c.get(f"/r/{token}").text and "box" not in c.get(f"/api/r/{token}").text
+
+
+def test_claim_sentence_must_match_the_checked_value(client):
+    main, c = client
+    base = {"title": "Dining set", "description": ""}
+    bad = [{"type0": "piece_count", "text0": "Seats 6, chairs included", "subject0": "chair", "value0": "4"},
+           {"type0": "piece_count", "text0": "Six chairs", "subject0": "chair", "value0": "4"},
+           {"type0": "piece_count", "text0": "Chairs included", "subject0": "chair", "value0": "four"},
+           {"type0": "color", "text0": "Black sofa", "value0": "white"}]
+    for form in bad:
+        assert c.post("/new", data={**base, **form}, follow_redirects=False).status_code == 422, form
+    good = {"type0": "piece_count", "text0": "Set of 4 chairs and one table", "subject0": "chair", "value0": "4",
+            "type1": "color", "text1": "Off-white finish", "value1": "cream"}
+    assert c.post("/new", data={**base, **good}, follow_redirects=False).status_code == 303

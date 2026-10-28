@@ -7,6 +7,7 @@ import binascii
 import io
 import json
 import os
+import re
 import time
 from urllib.parse import urlencode
 from datetime import datetime, timezone
@@ -19,7 +20,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from . import reports
-from .adjudicate import adjudicate, capture_code_seen, scan
+from .adjudicate import COLOR_FAMILIES, adjudicate, capture_code_seen, color_family, scan
 from .catalog import SLOT_PROMPTS, SUBJECT, Claim, ClaimType, Slot, count_subjects, required_slots
 from .observation import PhotoObservation
 from .store import Store
@@ -62,6 +63,25 @@ def seller_listing(listing_id: str, k: str):
     return row
 
 
+NUMBER_WORDS = {w: n for n, w in enumerate(
+    "zero one two three four five six seven eight nine ten eleven twelve".split())}
+COLOR_WORDS = {w for members in COLOR_FAMILIES.values() for w in members}
+
+
+def sentence_mismatch(ctype: ClaimType, text: str, value: str) -> str:
+    """Why the sentence buyers will read disagrees with the value the rules check, or ''."""
+    words = re.findall(r"[a-z]+|\d+", text.lower())
+    if ctype == ClaimType.PIECE_COUNT:
+        said = {int(w) if w.isdigit() else NUMBER_WORDS[w] for w in words if w.isdigit() or w in NUMBER_WORDS}
+        if said and int(value) not in said:
+            return f"says {', '.join(map(str, sorted(said)))} but the number to check is {value}"
+    if ctype == ClaimType.COLOR:
+        said = {color_family(w) for w in words if w in COLOR_WORDS}
+        if said and color_family(value) not in said:
+            return f"names {', '.join(sorted(said))} but the colour to check is {value}"
+    return ""
+
+
 def parse_claims(form) -> list[Claim]:
     claims = []
     for i in range(CLAIM_ROWS):
@@ -72,9 +92,13 @@ def parse_claims(form) -> list[Claim]:
         subject = " ".join((form.get(f"subject{i}") or "").lower().split())
         if ctype == ClaimType.PIECE_COUNT and not SUBJECT.fullmatch(subject):
             raise HTTPException(422, "What to count must be one to three plain words, e.g. 'chair'.")
+        value = (form.get(f"value{i}") or "").strip()[:40]
+        if ctype == ClaimType.PIECE_COUNT and not (value.isdigit() and 0 < int(value) < 100):
+            raise HTTPException(422, f"Claim {i + 1}: enter the number of pieces as digits, e.g. 4.")
+        if why := sentence_mismatch(ctype, text, value):
+            raise HTTPException(422, f"Claim {i + 1} {why}. Make them match: buyers read your sentence.")
         claims.append(Claim(id=f"c{i + 1}", type=ctype, text=text[:200],
-                            subject=subject[:40] if ctype == ClaimType.PIECE_COUNT else "",
-                            value=(form.get(f"value{i}") or "").strip()[:40]))
+                            subject=subject[:40] if ctype == ClaimType.PIECE_COUNT else "", value=value))
     if not claims:
         raise HTTPException(422, "Add at least one claim.")
     return claims
@@ -259,7 +283,8 @@ def report_page(request: Request, token: str):
         if view["state"] == "active" else []
     return templates.TemplateResponse(request, "report.html", {
         **view, "token": token, "summary": reports.summary(view["payload"]),
-        "url": str(request.url), "photos": photos})
+        "url": str(request.url), "photos": photos,
+        "image": f"{request.base_url}r/{token}/photo/front" if any(s == "front" for s, _ in photos) else ""})
 
 
 @app.get("/r/{token}/photo/{slot}")

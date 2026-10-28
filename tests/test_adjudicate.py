@@ -82,3 +82,10 @@ def test_capture_code():
     obs = [photo("front", visible_text=("7Q4K",)), photo("side", visible_text=("IKEA",))]
     assert capture_code_seen("7q4k", obs) == ["p-front"]
     assert capture_code_seen("ZZZZ", obs) == []
+
+
+def test_capture_code_only_counts_on_a_usable_photo():
+    readable = photo("front", visible_text=("6YA7",))
+    dark = PhotoObservation(photo_id="front", slot="front", usable=False, usability_issue="too_dark",
+                            visible_text=("6YA7",))
+    assert capture_code_seen("6ya7", [readable]) == ["p-front"] and capture_code_seen("6YA7", [dark]) == []

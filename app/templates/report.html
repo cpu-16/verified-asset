@@ -5,6 +5,7 @@
 <meta property="og:description" content="{% if state == 'active' %}{{ summary.supported }} supported, {{ summary.contradicted }} contradicted, {{ summary.inconclusive }} can't be checked from photos.{% else %}This report is {{ state }}.{% endif %}">
 <meta property="og:type" content="article">
 <meta property="og:url" content="{{ url }}">
+{% if image %}<meta property="og:image" content="{{ image }}">{% endif %}
 {% endblock %}
 {% block main %}
 {% if state != "active" %}
@@ -87,6 +88,8 @@
     </li>
   {% endfor %}{% endfor %}
   </ul>
+  <p class="soft how">{{ "Meta's Muse Spark" if "spark" in payload.observer else "Meta's Muse Glimmer" if "glimmer" in payload.observer else "The model" }}
+  described each photo without being shown these claims. Fixed rules compared the two.</p>
   <div class="limits">
     <h2>What this report can't tell you</h2>
     <p>{{ payload.limits }} Issued {{ payload.issued_at|day }}.</p>
