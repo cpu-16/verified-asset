@@ -1,6 +1,6 @@
 # Verified Asset — architecture (D-07 hackathon increment)
 
-**Status:** approved target architecture, **not an implemented end-to-end system**. Updated October 27, 2026. Source of decisions: [D-07](decisions/D-07-hackathon-architecture.md). D-01–D-06 remain the production product decisions.
+**Status:** the planning document from October 27, 2026, kept as the decision record. The [README](../README.md) describes what is built. Source of decisions: [D-07](decisions/D-07-hackathon-architecture.md). D-01–D-06 remain the production product decisions.
 
 This diagram shows **conditional Architecture B**: hosted Muse Spark for claim-blind visual observations (after G0/G1), deterministic code for claim outcomes, and an immutable report lifecycle. Muse Glimmer is an explicit local fallback; SAM 3.1 is an optional future counting experiment, not part of the committed build.
 
