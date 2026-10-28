@@ -1,0 +1,18 @@
+# secretos
+.env
+.env.*
+*.key
+*.pem
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+# datos privados: fotos reales, salidas de modelos, base de datos local
+data/private/
+data/raw/
+*.sqlite
+*.db
+# caches de modelos
+models/
+*.gguf
