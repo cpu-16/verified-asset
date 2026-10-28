@@ -30,6 +30,9 @@
 </section>
 
 <h2>What the photos show</h2>
+{% if photos %}<div class="slots">{% for slot, src in photos %}
+  <figure><img src="{{ src }}" alt="{{ slot|capitalize }} photo checked for this report" loading="lazy"><figcaption class="soft">{{ slot|capitalize }}</figcaption></figure>
+{% endfor %}</div>{% endif %}
 <p class="tally">
   {% if summary.contradicted %}<span><b>{{ summary.contradicted }}</b> contradicted</span>{% endif %}
   <span><b>{{ summary.supported }}</b> supported</span>
