@@ -46,19 +46,21 @@ class Claim:
     text: str  # seller's own words, shown in the report
     subject: str = ""  # noun to count, e.g. "chair"; empty for other types
     value: str = ""  # claimed colour or count; never sent to the model
+    by: str = ""  # "" = the seller wrote it; "video" = Muse Spark drafted it from the seller's video
 
     @property
     def required_slots(self) -> tuple[Slot, ...]:
         return REQUIRED_SLOTS[self.type]
 
     def to_dict(self) -> dict:
-        return {"id": self.id, "type": str(self.type), "text": self.text,
-                "subject": self.subject, "value": self.value}
+        d = {"id": self.id, "type": str(self.type), "text": self.text,
+             "subject": self.subject, "value": self.value}
+        return {**d, "by": self.by} if self.by else d  # seller-written claims keep their old shape
 
     @classmethod
     def from_dict(cls, d: dict) -> "Claim":
         return cls(id=d["id"], type=ClaimType(d["type"]), text=d["text"],
-                   subject=d.get("subject", ""), value=str(d.get("value", "")))
+                   subject=d.get("subject", ""), value=str(d.get("value", "")), by=d.get("by", ""))
 
 
 SUBJECT = re.compile(r"[a-z]+(?: [a-z]+){0,2}")  # the only seller text the observer ever sees

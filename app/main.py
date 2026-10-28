@@ -3,6 +3,7 @@
 Sellers have no accounts: the listing URL carries a secret `k` (capability link).
 """
 import base64
+import dataclasses
 import binascii
 import hashlib
 import io
@@ -33,6 +34,8 @@ DATA = Path(os.environ.get("DATA_DIR", "data"))
 MAX_PHOTO_BYTES = 12_000_000
 MAX_SCAN_PHOTOS, MAX_SCAN_BYTES = 6, 5_000_000
 CLAIM_ROWS = 6
+MAX_FILM_FRAMES = 12
+MAX_FRAME_BYTES = 2_000_000  # the phone sends JPEGs of at most 1280 px
 
 app = FastAPI(title="Verified Asset")
 app.add_middleware(CORSMiddleware, allow_origins=["https://www.facebook.com"],
@@ -105,7 +108,8 @@ def parse_claims(form) -> list[Claim]:
         if why := sentence_mismatch(ctype, text, value):
             raise HTTPException(422, f"Claim {i + 1} {why}. Make them match: buyers read your sentence.")
         claims.append(Claim(id=f"c{i + 1}", type=ctype, text=text[:200],
-                            subject=subject[:40] if ctype == ClaimType.PIECE_COUNT else "", value=value))
+                            subject=subject[:40] if ctype == ClaimType.PIECE_COUNT else "", value=value,
+                            by="video" if form.get(f"by{i}") == "video" else ""))
     if not claims:
         raise HTTPException(422, "Add at least one claim.")
     return claims
@@ -134,18 +138,23 @@ async def create(request: Request):
 
 
 SUGGESTIONS_PER_DAY = 20
+FILMS_PER_DAY = 10
 # ponytail: per address and in memory (a restart resets it); the daily spend cap is the real backstop
-_suggestions: dict[tuple[str, str], int] = {}
+_per_address: dict[tuple[str, str, str], int] = {}
+
+
+def over_daily_limit(request: Request, kind: str, limit: int) -> bool:
+    seen = (time.strftime("%Y-%m-%d"), kind, request.client.host if request.client else "")
+    _per_address[seen] = _per_address.get(seen, 0) + 1
+    return _per_address[seen] > limit
 
 
 def suggested_claims(request: Request, title: str, description: str) -> tuple[list[Claim], str]:
     """Muse Spark reads only the seller's words and proposes claim rows; it never sees the photos."""
     if not (title.strip() or description.strip()):
         return [], "Write a title or a description first."
-    seen = (time.strftime("%Y-%m-%d"), request.client.host if request.client else "")
-    if _suggestions.get(seen, 0) >= SUGGESTIONS_PER_DAY:
+    if over_daily_limit(request, "suggest", SUGGESTIONS_PER_DAY):
         return [], "That's the limit of suggestions for today. Fill in the claims yourself."
-    _suggestions[seen] = _suggestions.get(seen, 0) + 1
     try:
         observer = get_observer()
     except ValueError:
@@ -166,6 +175,61 @@ def suggest(request: Request, title: str = Form(""), description: str = Form("")
         "title": title[:200], "description": description[:2000], "source": source[:500],
         "rows": range(CLAIM_ROWS), "types": list(ClaimType), "claims": claims, "suggested": bool(claims),
         "error": error})
+
+
+@app.post("/film")
+def film():
+    """Film it instead: an empty listing whose page asks for one video. Muse Spark drafts the rest."""
+    listing_id, key = store.create_listing("Untitled item", "", [])
+    return RedirectResponse(f"/l/{listing_id}?k={key}#film", status_code=303)
+
+
+@app.post("/l/{listing_id}/video")
+def video(request: Request, listing_id: str, k: str, frames: list[UploadFile] = File(...),
+          times: str = Form("")):
+    """Frames the seller's phone took from their video (the video itself never leaves the phone)."""
+    from .observe import CheckLimitExceeded, listing_check, prepare_image
+    row = seller_listing(listing_id, k)
+    if row["sample"]:
+        raise HTTPException(409, "The sample's photos can't be changed. Start your own report to film an item.")
+    if not 1 <= len(frames) <= MAX_FILM_FRAMES:
+        raise HTTPException(422, f"Send between 1 and {MAX_FILM_FRAMES} frames.")
+    data = []
+    for f in frames:
+        raw = f.file.read(MAX_FRAME_BYTES + 1)
+        if not raw or len(raw) > MAX_FRAME_BYTES:
+            raise HTTPException(413, "A frame is missing or larger than 2 MB.")
+        try:
+            data.append(prepare_image(raw)[0])  # strips EXIF/GPS like any photo
+        except Exception:
+            raise HTTPException(415, "A frame is not a readable image.")
+    try:
+        observer = get_observer()
+    except ValueError:
+        raise HTTPException(503, "Filming needs the model, which isn't set up on this server yet. "
+                                 "Take photos instead.")
+    if over_daily_limit(request, "film", FILMS_PER_DAY):
+        raise HTTPException(429, "That's the limit of videos for today. Take photos instead.")
+    try:
+        with listing_check(store, listing_id):
+            draft = observer.draft_from_frames(data)
+    except CheckLimitExceeded as exc:
+        raise HTTPException(429, str(exc))
+    except Exception as exc:  # network, spending cap or an invalid answer
+        raise HTTPException(503, f"Muse Spark couldn't draft from the video ({type(exc).__name__}). "
+                                 "Try again, or take photos instead.")
+    picks = {slot: draft[slot] for slot in Slot if 0 <= draft[slot] < len(data)}
+    for slot, i in picks.items():
+        store.add_photo(listing_id, slot, data[i])
+    # only counts and colours, and only sentences that name the value they check: a drafted "no damage"
+    # would be checked on frames the same model picked, so that claim stays the seller's to make
+    claims = [dataclasses.replace(c, by="video") for c in scan_claims(draft["claims"])
+              if c.type in (ClaimType.PIECE_COUNT, ClaimType.COLOR) and not sentence_mismatch(c.type, c.text, c.value)]
+    claims = claims[:CLAIM_ROWS]
+    store.log(listing_id, "video_draft", version=store.latest_version(listing_id)["version"],
+              title=draft["title"].strip()[:200] or "Untitled item", description=draft["description"].strip()[:2000],
+              claims=[c.to_dict() for c in claims], frames=picks, times=times[:200], observer=observer.name)
+    return RedirectResponse(f"/l/{listing_id}?k={k}#draft", status_code=303)
 
 
 @app.post("/sample")
@@ -192,7 +256,11 @@ def listing_page(request: Request, listing_id: str, k: str):
     verdicts = {v["claim_id"]: v for v in json.loads(check["verdicts"])} if check and check["ok"] else {}
     stale = bool(check) and json.loads(check["photos"]) != {s: p["id"] for s, p in photos.items()}
     marks = sam_marks(check, photos) if check and check["ok"] and not stale else {}
+    draft = None if row["sample"] else store.video_draft(listing_id, version["version"])
+    if draft:
+        draft["claims"] = [Claim.from_dict(d) for d in draft["claims"]]
     return templates.TemplateResponse(request, "listing.html", {
+        "draft": draft,
         "listing": row, "k": k, "version": version, "claims": claims, "photos": photos,
         "slots": [(s, SLOT_PROMPTS[s]) for s in required_slots(claims)] or [(Slot.FRONT, SLOT_PROMPTS[Slot.FRONT])],
         "check": check, "verdicts": verdicts, "stale": stale, "marks": marks,
@@ -320,6 +388,9 @@ async def edit(request: Request, listing_id: str, k: str):
     form = await request.form()
     store.edit_listing(listing_id, (form.get("title") or "Untitled item")[:200],
                        (form.get("description") or "")[:2000], parse_claims(form))
+    if request.query_params.get("check"):  # "Save and check" on a draft from the video
+        from starlette.concurrency import run_in_threadpool
+        return await run_in_threadpool(run_check, listing_id, k)
     return RedirectResponse(f"/l/{listing_id}?k={k}", status_code=303)
 
 
@@ -375,7 +446,7 @@ def report_api(request: Request, token: str):
         return JSONResponse(out)
     return JSONResponse({**out, "issued_at": p["issued_at"], "expires_at": p["expires_at"],
                          "digest": view["digest"], "observer": p["observer"],
-                         "verdicts": [{"claim": c["text"], "status": c["verdict"]["status"],
+                         "verdicts": [{"claim": c["text"], "by": c.get("by", ""), "status": c["verdict"]["status"],
                                        "detail": c["verdict"]["detail"],
                                        "request": c["verdict"]["request"]} for c in p["claims"]]})
 

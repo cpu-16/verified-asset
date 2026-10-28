@@ -12,6 +12,11 @@
   <h1 class="display">Describe your item</h1>
   <p class="lede">Write what you'd tell a buyer. Next you'll take only the photos that back it up.</p>
 </div>
+<form method="post" action="/film" class="card film-entry">
+  <span class="film-entry-ico" aria-hidden="true"><svg class="ico" viewBox="0 0 20 20"><use href="#i-video"/></svg></span>
+  <div><h2>Rather film it?</h2><p class="soft">Film the item once with your phone. Muse Spark drafts the listing and picks the photos, and you check every line before anything is saved.</p></div>
+  <button class="secondary" type="submit">Film it instead</button>
+</form>
 <form method="post" action="/new" class="card form-card" id="describe">
   <label>Title <input name="title" value="{{ title }}" required maxlength="200" placeholder="Oak dining set with 4 chairs"></label>
   <label>Description <textarea name="description" rows="4" maxlength="2000" placeholder="Say it the way you'd tell a buyer: what it is, how many pieces, the colour, any marks.">{{ description }}</textarea></label>
@@ -39,10 +44,6 @@
     if (e.submitter && e.submitter.formAction.indexOf("/suggest") > -1) {
       e.submitter.disabled = true; e.submitter.lastChild.textContent = "Reading your description…";
     }
-  });
-  // a suggestion the seller edits is theirs now: drop its tag
-  form.querySelectorAll(".claim-row.suggested").forEach(function (row) {
-    row.addEventListener("input", function () { row.classList.remove("suggested"); }, { once: true });
   });
 })();
 </script>

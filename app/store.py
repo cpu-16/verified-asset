@@ -152,6 +152,13 @@ class Store:
     def claims_of(version) -> list[Claim]:
         return [Claim.from_dict(d) for d in json.loads(version["claims"])]
 
+    def video_draft(self, listing_id: str, version: int) -> dict | None:
+        """Muse Spark's latest draft from the seller's video, until the seller saves a version over it."""
+        row = self.db.execute("SELECT detail FROM events WHERE listing_id=? AND kind='video_draft'"
+                              " ORDER BY id DESC LIMIT 1", (listing_id,)).fetchone()
+        draft = json.loads(row["detail"]) if row else None
+        return draft if draft and draft["version"] == version else None
+
     # photos ----------------------------------------------------------------
     def add_photo(self, listing_id: str, slot: str, data: bytes) -> str:
         sha = hashlib.sha256(data).hexdigest()

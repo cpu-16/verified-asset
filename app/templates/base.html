@@ -325,6 +325,38 @@ h2.pill { margin: 0 0 .6rem; font-size: .875rem; letter-spacing: 0; }
 .suggest p { margin: 0; flex: 1 1 18rem; color: var(--mute); font-size: .875rem; }
 .suggest .ico { width: 1.1rem; height: 1.1rem; color: #B9A4FF; }
 .form-card .suggest + .alert { margin-top: 1rem; }
+.by { display: flex; align-items: center; gap: .3rem; margin: .2rem 0 0; font-size: .8125rem; color: #B9A4FF; }
+.by .ico { width: .95rem; height: .95rem; flex: none; }
+
+/* "Film it instead": one video, frames sampled on the phone, a draft the seller approves */
+.film-entry { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.2rem; margin: 0 0 16px; }
+.film-entry > div { flex: 1 1 16rem; }
+.film-entry h2 { margin: 0 0 .25rem; font-size: 1.15rem; }
+.film-entry p { margin: 0; }
+.film-entry-ico { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 14px; color: #CFC2FF; background: rgba(143, 102, 255, .14); border: 1px solid rgba(143, 102, 255, .3); }
+.film-entry-ico .ico { width: 1.4rem; height: 1.4rem; }
+.film-steps { margin: .4rem 0 1.2rem; padding-left: 1.3rem; color: var(--soft); display: grid; gap: .35rem; }
+.film-steps li::marker { color: var(--violet-hi); font-weight: 600; }
+.film-pick { position: relative; }
+.film-pick .ico { width: 1.2rem; height: 1.2rem; }
+.film-pick input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0 0 0 0); }
+.film-pick:focus-within { outline: 2px solid var(--violet-hi); outline-offset: 3px; }
+.film.busy .film-pick { opacity: .6; pointer-events: none; }
+.film-status { margin: .8rem 0 0; color: var(--soft); font-size: .9375rem; }
+.film-status:empty { display: none; }
+.film.bad .film-status { color: var(--no); }
+.film-frames { display: flex; flex-wrap: wrap; gap: 6px; margin-top: .6rem; }
+.film-frames:empty { display: none; }
+.film-frames img { height: 48px; width: auto; border-radius: 8px; border: 1px solid var(--line); }
+.film-note { margin: 1rem 0 0; font-size: .875rem; }
+.draft-shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 1rem 0 .4rem; }
+.draft-shots figure { margin: 0; }
+.draft-shots img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 12px; border: 1px solid var(--line); }
+.draft-shots figcaption { margin-top: .35rem; font-size: .8125rem; color: var(--soft); }
+@media (prefers-reduced-motion: no-preference) {
+  .film-frames img { animation: frame-in .3s var(--ease-out) both; }
+}
+@keyframes frame-in { from { opacity: 0; transform: scale(.94); } }
 .claim-row:has(option[value="piece_count"]:checked) { grid-template-columns: minmax(8em, 12em) minmax(0, 1fr) minmax(5em, 8em) minmax(4em, 5.5em); }
 .claim-row:has(option[value="piece_count"]:checked) :is(.what, .value),
 .claim-row:has(option[value="color"]:checked) .value { display: block; }
@@ -518,6 +550,7 @@ h2.pill { margin: 0 0 .6rem; font-size: .875rem; letter-spacing: 0; }
   <symbol id="i-photo" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="M3 6.5h3l1.3-2h5.4l1.3 2h3v9.5H3z"/><circle cx="10" cy="11" r="2.9" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
   <symbol id="i-eye" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z"/><circle cx="10" cy="10" r="2.4" fill="currentColor"/></symbol>
   <symbol id="i-rules" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M4 5.5h12M4 10h8M4 14.5h5"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="m12.5 14 1.8 1.8 3.2-3.6"/></symbol>
+  <symbol id="i-video" viewBox="0 0 20 20"><rect x="2.5" y="5.5" width="11" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" d="m14.5 8.7 3-1.9v6.4l-3-1.9z"/></symbol>
   <symbol id="i-spark" viewBox="0 0 20 20"><path fill="currentColor" d="M9 2.5c.55 3.7 1.8 4.95 5.5 5.5-3.7.55-4.95 1.8-5.5 5.5-.55-3.7-1.8-4.95-5.5-5.5 3.7-.55 4.95-1.8 5.5-5.5zm6 9c.3 1.8.95 2.45 2.75 2.75-1.8.3-2.45.95-2.75 2.75-.3-1.8-.95-2.45-2.75-2.75 1.8-.3 2.45-.95 2.75-2.75z"/></symbol>
   <symbol id="i-lock" viewBox="0 0 20 20"><rect x="4.5" y="9" width="11" height="8" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="none" stroke="currentColor" stroke-width="1.5" d="M7 9V6.8a3 3 0 0 1 6 0V9"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 4h8.2l7.8 7.8-8.2 8.2L4 12.2z"/><circle cx="8.3" cy="8.3" r="1.4" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m10 13 2.2 2.2 4.4-4.6"/></symbol>
@@ -553,6 +586,13 @@ h2.pill { margin: 0 0 .6rem; font-size: .875rem; letter-spacing: 0; }
   var chrome = document.getElementById("chrome");
   function onScroll() { chrome.classList.toggle("scrolled", window.scrollY > 8); }
   onScroll(); window.addEventListener("scroll", onScroll, { passive: true });
+  // a suggested or drafted claim the seller edits is theirs now: drop its tag and its authorship
+  document.querySelectorAll(".claim-row.suggested").forEach(function (row) {
+    row.addEventListener("input", function () {
+      row.classList.remove("suggested");
+      var by = row.querySelector('input[name^="by"]'); if (by) by.value = "";
+    }, { once: true });
+  });
   var items = document.querySelectorAll("[data-reveal], [data-stagger]");
   document.querySelectorAll("[data-stagger]").forEach(function (list) {
     Array.prototype.forEach.call(list.children, function (el, i) { el.style.setProperty("--k", i); });

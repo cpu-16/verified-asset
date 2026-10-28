@@ -97,7 +97,22 @@ The buyer never sees SAM's boxes or the seller's private page.
 5. The value to check: the number, or the color.
 6. **Suggest claims** fills the rows for you. Write or dictate the description the way you'd tell a buyer, press it, and Muse Spark turns your words into rows marked *Suggested*. It reads only the description, never the photos. Change or clear any row; nothing is saved until you continue. It takes about 6 seconds and needs the model key on the server.
 
+7. **Film it instead** skips the typing: see step 11.
+
 Then **Continue to photos** and follow steps 2 to 6 with your own item.
+
+## 11. Filming instead
+
+![The draft Muse Spark made from a video](guide/11-film.webp)
+
+Write the listing's code on paper, press **Film the item** and film 10 to 30 seconds: the front with the paper in view, one side, then close on the top. The phone keeps the video and sends only 10 still frames. About 15 seconds later the draft appears.
+
+1. The front, side and close-up photos Muse Spark picked from the frames. They become the listing's photos.
+2. The draft is marked as Muse Spark's: it can be wrong, and it isn't a certification.
+3. Muse Spark drafts the title and description, plus only counts and colours, each marked *From your video*. It never drafts "no visible damage": damage it sees goes in the description, and that claim stays the seller's to make. Editing a row makes it the seller's.
+4. **Save and check** saves the listing and runs the same blind check as step 3. On the report, each claim it drafted says *Drafted by Muse Spark from the seller's video; the seller kept this wording*.
+
+It needs the model key on the server, and each phone can film 10 items a day.
 
 ## A two-minute run for testers
 

@@ -1,8 +1,9 @@
 """Take the demo guide's screenshots from a running site and number the parts the guide talks about.
 
-    python3 docs/guide/shoot.py [base url]    (needs playwright with its browser, and pillow)
+    python3 docs/guide/shoot.py [base url] [draft url]    (needs playwright with its browser, and pillow)
 
-Uses only the sample listing, so it never calls a model and never spends.
+Uses only the sample listing, so it never calls a model and never spends. The optional draft url is the
+seller's page of a "Film it instead" listing whose draft is already made; without it, 11-film is skipped.
 """
 import asyncio
 import sys
@@ -147,8 +148,18 @@ async def main():
         rows = await box(pg, ".claim-rows")
         mark(raw, [(1, await box(pg, "input[name=title]")), (2, await box(pg, ".claim-row select")),
                    (3, await box(pg, ".claim-row .text")), (4, await box(pg, ".claim-row .what")),
-                   (5, await box(pg, ".claim-row .value")), (6, await box(pg, ".suggest button"))],
+                   (5, await box(pg, ".claim-row .value")), (6, await box(pg, ".suggest button")),
+                   (7, await box(pg, ".film-entry button"))],
              (0, (await box(pg, ".steps"))[1] - 28, W, rows[1] + 300), "10-new")
+
+        # 10. Filming instead (a draft made beforehand: making one calls the model)
+        if len(sys.argv) > 2:
+            await pg.goto(sys.argv[2], wait_until="networkidle")
+            raw = await shot(pg, "film")
+            card = await box(pg, "#draft")
+            mark(raw, [(1, await box(pg, ".draft-shots")), (2, await box(pg, "#draft .alert")),
+                       (3, await box(pg, "#draft .claim-row.suggested")), (4, await box(pg, "#draft-form .big"))],
+                 (0, card[1] - 28, W, card[1] + card[3] + 28), "11-film")
 
         await b.close()
     for f in OUT.glob("raw-*.png"):

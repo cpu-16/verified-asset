@@ -6,13 +6,14 @@
 {% set d2 = photos|length >= slots|length %}
 {% set d3 = check and check.ok and not stale %}
 {% set d4 = reports %}
+{% set filming = not listing.sample and not claims %}{# a "Film it instead" listing before the seller saved the draft #}
 <p class="alert wait" role="note">
   <svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-lock"/></svg>
   <span>Keep this page's link to yourself. Anyone with it can edit your listing and issue reports.</span>
 </p>
 <div class="page-head">
-  <span class="chip">Version {{ version.version }}</span>
-  <h1 class="display">{{ version.title }}</h1>
+  {% if not filming %}<span class="chip">Version {{ version.version }}</span>{% endif %}
+  <h1 class="display">{{ ("Check the draft" if draft else "Film your item") if filming else version.title }}</h1>
   {% if version.description %}<p class="lede">{{ version.description }}</p>{% endif %}
 </div>
 <div class="seller">
@@ -24,7 +25,7 @@
     </li>
     <li class="{% if d2 %}done{% elif d1 %}current{% endif %}">
       <span class="step-mark" aria-hidden="true">{% if d2 %}<svg class="ico" viewBox="0 0 20 20"><use href="#i-check"/></svg>{% else %}2{% endif %}</span>
-      <a href="#photos"{% if d1 and not d2 %} aria-current="step"{% endif %}>{% if d2 %}<span class="sr">Done. </span>{% endif %}Take the photos</a>
+      <a href="#{{ "film" if filming else "photos" }}"{% if d1 and not d2 %} aria-current="step"{% endif %}>{% if d2 %}<span class="sr">Done. </span>{% endif %}{{ "Film the item" if filming else "Take the photos" }}</a>
     </li>
     <li class="{% if d3 %}done{% elif d2 %}current{% endif %}">
       <span class="step-mark" aria-hidden="true">{% if d3 %}<svg class="ico" viewBox="0 0 20 20"><use href="#i-check"/></svg>{% else %}3{% endif %}</span>
@@ -37,14 +38,49 @@
   </ol>
 </nav>
 <div class="seller-main">
+  {% if draft %}
+  <section class="card draft-card" id="draft">
+    <h2>Check what Muse Spark drafted</h2>
+    <p class="alert ai" role="note"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-spark"/></svg><span>Muse Spark drafted this from your video. It can be wrong, and it isn't a certification. Keep, change or clear each line, then save.</span></p>
+    <div class="draft-shots">
+    {% for slot in ["front", "side", "detail"] %}{% if photos.get(slot) %}
+      <figure><img src="/l/{{ listing.id }}/photo/{{ photos[slot].id }}?k={{ k }}" alt="The {{ "close-up" if slot == "detail" else slot }} photo Muse Spark picked from your video"><figcaption>{{ "Close-up" if slot == "detail" else slot|capitalize }}</figcaption></figure>
+    {% endif %}{% endfor %}
+    </div>
+    <form method="post" action="/l/{{ listing.id }}/edit?k={{ k }}&amp;check=1" id="draft-form">
+      <label>Title <input name="title" value="{{ draft.title }}" required maxlength="200"></label>
+      <label>Description <textarea name="description" rows="3" maxlength="2000">{{ draft.description }}</textarea></label>
+      {% with claims = draft.claims %}{% include "_claim_rows.html" %}{% endwith %}
+      <div class="form-actions"><button class="big" type="submit">Save and check</button><p>Muse Spark then looks at each photo without these claims, and fixed rules compare.</p></div>
+    </form>
+  </section>
+  {% endif %}
+
   <section class="card code-card" id="code">
     <div>
       <h2>Write this code on a piece of paper</h2>
-      <p class="soft">Put it next to the item in the front photo. It makes it hard to pass off old or downloaded photos as this listing's.</p>
+      <p class="soft">Put it next to the item {{ "when you film it" if filming else "in the front photo" }}. It makes it hard to pass off old or downloaded photos as this listing's.</p>
     </div>
     <span class="slip" aria-label="This listing's code {{ listing.capture_code }}">{{ listing.capture_code }}</span>
   </section>
 
+  {% if filming %}
+  <section class="card film-card" id="film">
+    <h2>{{ "Not right? Film it again" if draft else "Film your item" }}</h2>
+    <ol class="film-steps">
+      <li>Put the paper with the code next to the item.</li>
+      <li>Film 10 to 30 seconds: start at the front with the paper in view, walk to one side, end close on the top or seat.</li>
+      <li>Muse Spark drafts the title, description, counts and colour, and picks the photos. You check every line before anything is saved.</li>
+    </ol>
+    <form class="film" method="post" action="/l/{{ listing.id }}/video?k={{ k }}" enctype="multipart/form-data">
+      <label class="film-pick button{% if draft %} secondary{% endif %}"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-video"/></svg><span>{{ "Film again" if draft else "Film the item" }}</span><input type="file" name="video" accept="video/*" capture="environment"></label>
+      <p class="film-status" role="status" aria-live="polite"></p>
+      <div class="film-frames"></div>
+    </form>
+    <noscript><p class="alert wait">Filming needs JavaScript. You can <a href="/new">write the listing and take photos</a> instead.</p></noscript>
+    <p class="soft film-note">The video stays on your phone: only 10 still frames are sent. Rather type it? <a href="/new">Write the listing yourself</a>.</p>
+  </section>
+  {% else %}
   <section class="card" id="photos">
     <h2>Take the photos</h2>
     <p class="soft">We only ask for the photos your claims need.</p>
@@ -107,6 +143,7 @@
         </span>
         <div>
           <p class="claim">{{ c.text }}</p>
+          {% if c.by == "video" %}<p class="by"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-spark"/></svg>Drafted from your video</p>{% endif %}
           {% if v %}<p class="why">{{ v.detail }}</p>{% if v.request %}<p class="ask"><span class="ask-label">To settle it:</span> {{ v.request }}.</p>{% endif %}{% endif %}
         </div>
       </li>
@@ -153,10 +190,12 @@
       <div class="form-actions"><button class="secondary" type="submit">Save version {{ version.version + 1 }}</button></div>
     </form>
   </details>
+  {% endif %}
 </div>
 </div>
 {% endblock %}
 {% block scripts %}
+{% if not listing.sample and not claims %}<script src="/static/film.js?v={{ v }}" defer></script>{% endif %}{# blocks do not share set variables #}
 <script>
 (function () {
   document.querySelectorAll("[data-copy]").forEach(function (btn) {
@@ -181,6 +220,10 @@
     tile.addEventListener("drop", function (e) {
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) { input.files = e.dataTransfer.files; upload(); }
     });
+  });
+  var draftForm = document.getElementById("draft-form");
+  if (draftForm) draftForm.addEventListener("submit", function () {
+    var btn = draftForm.querySelector("button[type=submit]"); btn.disabled = true; btn.textContent = "Saving and checking…";
   });
   // While the check runs, show what is happening; the server's redirect replaces the page when it's done.
   var form = document.getElementById("check-form");

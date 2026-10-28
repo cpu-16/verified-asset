@@ -83,6 +83,7 @@
       <span class="pill {{ status }}"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#{{ {'supported': 'i-check', 'contradicted': 'i-x', 'inconclusive': 'i-ask'}[status] }}"/></svg>{{ status|capitalize }}</span>
       <div>
         <p class="claim">{{ c.text }}</p>
+        {% if c.by == "video" %}<p class="by"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-spark"/></svg>Drafted by Muse Spark from the seller's video; the seller kept this wording</p>{% endif %}
         <p class="why">{{ c.verdict.detail }}</p>
         {% if c.verdict.request %}<p class="ask"><span class="ask-label">What would settle it:</span> {{ c.verdict.request }}</p>{% endif %}
       </div>
@@ -90,7 +91,9 @@
   {% endfor %}{% endfor %}
   </ul>
   <p class="soft how">{{ "Meta's Muse Spark" if "spark" in payload.observer else "Meta's Muse Glimmer" if "glimmer" in payload.observer else "The model" }}
-  described each photo without being shown these claims. Fixed rules compared the two.</p>
+  described each photo without being shown these claims. Fixed rules compared the two.{% if payload.claims|selectattr("by", "equalto", "video")|list %}
+  Claims marked as drafted were written by Muse Spark from the seller's video and kept by the seller. A draft can be wrong,
+  so the same blind check decided them, on the photos shown here, not on the video.{% endif %}</p>
   <div class="limits">
     <h2>What this report can't tell you</h2>
     <p>{{ payload.limits }} Issued {{ payload.issued_at|day }}.</p>

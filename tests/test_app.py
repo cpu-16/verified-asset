@@ -372,3 +372,92 @@ def test_sample_claim_edits_replay(sample, claim, status):
     assert r.status_code == 303
     api = c.get("/api" + r.headers["location"]).json()
     assert api["sample"] is True and api["verdicts"][0]["status"] == status
+
+
+class FakeDrafter(FakeObserver):
+    def __init__(self, draft, **kw):
+        super().__init__(**kw)
+        self.draft, self.frames_seen = draft, []
+
+    def draft_from_frames(self, frames):
+        self.frames_seen.append(len(frames))
+        return self.draft
+
+
+DRAFT = {"title": "White dining table with four chairs",
+         "description": "A white dining table with four chairs. The tabletop has peeling near the edge.",
+         "claims": [{"type": "piece_count", "text": "The set includes four chairs.", "subject": "chair", "value": "4"},
+                    {"type": "color", "text": "The table is white.", "subject": "table", "value": "white"}],
+         "front": 0, "side": 3, "detail": 99}  # an index past the frames is ignored
+
+
+def film_listing(c):
+    r = c.post("/film", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].endswith("#film")
+    return re.match(r"/l/([^?]+)\?k=([^#]+)", r.headers["location"]).groups()
+
+
+def test_film_draft_is_approved_then_checked_blind(client):
+    import json
+    main, c = client
+    listing_id, key = film_listing(c)
+    page = c.get(f"/l/{listing_id}?k={key}").text
+    assert 'class="film"' in page and "film.js" in page and 'id="check"' not in page
+    main.app.state.observer = fake = FakeDrafter(DRAFT)
+    frames = [("frames", (f"frame-{i}.jpg", jpeg(), "image/jpeg")) for i in range(10)]
+    r = c.post(f"/l/{listing_id}/video?k={key}", files=frames, data={"times": "0.6,2.1"}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].endswith("#draft")
+    assert fake.frames_seen == [10] and fake.seen_nouns == []  # drafting is one call, no check yet
+    assert set(main.store.current_photos(listing_id)) == {"front", "side"}
+    page = c.get(f"/l/{listing_id}?k={key}").text
+    assert "Muse Spark drafted this from your video" in page and page.count("From your video") == 2
+    assert main.store.latest_version(listing_id)["version"] == 1  # nothing saved until the seller does
+    # the seller keeps the count as drafted and rewrites the colour line: only the count stays Spark's
+    c.post(f"/l/{listing_id}/edit?k={key}", data={
+        "title": DRAFT["title"], "description": DRAFT["description"],
+        "type0": "piece_count", "text0": "The set includes four chairs.", "subject0": "chair", "value0": "4", "by0": "video",
+        "type1": "color", "text1": "Bright white table", "value1": "white", "by1": ""})
+    claims = main.store.claims_of(main.store.latest_version(listing_id))
+    assert [c.by for c in claims] == ["video", ""]
+    assert "Muse Spark drafted this" not in c.get(f"/l/{listing_id}?k={key}").text  # the draft is used up
+    c.post(f"/l/{listing_id}/check?k={key}")
+    assert fake.seen_nouns == [["chair"]]  # the check is the usual blind one
+    token = c.post(f"/l/{listing_id}/report?k={key}", follow_redirects=False).headers["location"].split("/")[-1]
+    report = c.get(f"/r/{token}").text
+    assert report.count("Drafted by Muse Spark from the seller") == 1
+    assert json.loads(main.store.report(token)["payload"])["claims"][0]["by"] == "video"
+
+
+def test_film_refuses_cleanly(client):
+    main, c = client
+    listing_id, key = film_listing(c)
+    frames = [("frames", ("f.jpg", jpeg(), "image/jpeg"))]
+    assert c.post(f"/l/{listing_id}/video?k={key}", files=frames).status_code == 503  # no model configured
+    main.app.state.observer = FakeDrafter(DRAFT)
+    assert c.post(f"/l/{listing_id}/video?k={key}", files=frames * 13).status_code == 422
+    assert c.post(f"/l/{listing_id}/video?k={key}", files=[("frames", ("f.jpg", b"nope", "image/jpeg"))]).status_code == 415
+    assert c.post(f"/l/{listing_id}/video?k=wrong", files=frames).status_code == 404
+    sample_path = c.post("/sample", follow_redirects=False).headers["location"]
+    assert c.post(sample_path.replace("?k=", "/video?k="), files=frames).status_code == 409
+
+
+def test_film_draft_keeps_only_counts_and_colours_that_match(client, monkeypatch):
+    main, c = client
+    listing_id, key = film_listing(c)
+    main.app.state.observer = fake = FakeDrafter({**DRAFT, "claims": DRAFT["claims"] + [
+        {"type": "no_visible_damage", "text": "No scratches", "subject": "", "value": ""},
+        {"type": "piece_count", "text": "Six chairs", "subject": "chair", "value": "4"},
+        {"type": "uncheckable", "text": "Solid oak", "subject": "", "value": ""}]})
+    frames = [("frames", ("f.jpg", jpeg(), "image/jpeg"))] * 4
+    c.post(f"/l/{listing_id}/video?k={key}", files=frames)
+    draft = main.store.video_draft(listing_id, 1)
+    assert [d["text"] for d in draft["claims"]] == ["The set includes four chairs.", "The table is white."]
+    # "Save and check" saves the version and runs the usual blind check in one step
+    r = c.post(f"/l/{listing_id}/edit?k={key}&check=1", follow_redirects=False, data={
+        "title": "Dining set", "type0": "piece_count", "text0": "4 chairs", "subject0": "chair", "value0": "4",
+        "by0": "video"})
+    assert r.headers["location"].endswith("#check") and fake.seen_nouns == [["chair"]]
+    monkeypatch.setattr(main, "FILMS_PER_DAY", 1)
+    assert c.post(f"/l/{listing_id}/video?k={key}", files=frames).status_code == 429
+    assert c.post(f"/l/{listing_id}/video?k={key}", files=[("frames", ("f.jpg", b"x" * 2_000_001, "image/jpeg"))]
+                  ).status_code == 413
