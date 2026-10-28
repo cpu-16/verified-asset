@@ -1,0 +1,16 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - run: uv sync --frozen
+      - run: uv run pytest -q
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: node extension/test/check.mjs
+        env:
+          CHROMIUM: google-chrome
