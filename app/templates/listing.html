@@ -116,7 +116,7 @@
       <div class="checking" role="status" aria-live="polite">
         <ol>
           {% for slot, _ in slots %}<li>Muse Spark is describing the {{ "close-up" if slot == "detail" else slot }} photo</li>{% endfor %}
-          <li>SAM 3.1 is counting and locating damage</li>
+          {% if not listing.sample and claims|selectattr("type", "equalto", "piece_count")|list %}<li>SAM 3.1 is counting and locating damage</li>{% endif %}
           <li>Fixed rules are comparing claims with what was seen</li>
         </ol>
         <p class="hint">The model never sees your claims. This takes a few seconds.</p>
