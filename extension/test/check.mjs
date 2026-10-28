@@ -180,7 +180,7 @@ test("fixture page renders the report, the empty state, and the fallbacks", asyn
     assert.equal(active.disclaimer, "Independent demo · not affiliated with Meta");
     assert.equal(active.headline, "1 supported · 1 contradicted · 2 inconclusive");
     assert.equal(active.banner, "");
-    assert.deepEqual(active.chips, ["Supported", "Supported", "Contradicted", "Inconclusive"]);
+    assert.deepEqual(active.chips, ["Inconclusive", "Supported", "Contradicted", "Inconclusive"]);
     assert.deepEqual(active.asks, ["Ask the seller for: a photo of the chair next to the desk"]);
     assert.match(active.details[2], /pale scratch/);
     assert.equal(active.actions.includes("Copy message for the seller"), false);
@@ -213,7 +213,7 @@ test("fixture page renders the report, the empty state, and the fallbacks", asyn
     const hidden = decodePre(await open("?mock=1&click=hide"));
     assert.equal(hidden.expanded, "false");
     assert.equal(hidden.disclaimer, "Independent demo · not affiliated with Meta");
-    assert.equal(hidden.headline, "2 supported · 1 contradicted · 1 inconclusive");
+    assert.equal(hidden.headline, "1 supported · 1 contradicted · 2 inconclusive");
     assert.equal(hidden.actions.includes("Show"), true);
 
     const copied = decodePre(await open("?mock=1&noreport=1&click=copy"));
