@@ -192,8 +192,8 @@ def scan(claims: list[Claim], obs: list[PhotoObservation]) -> list[Verdict]:
                             f"The listing photos show {shown} {claim.subject}(s), not {claim.value}.",
                             v.photo_ids, f"one photo with all {claim.value} {claim.subject}s in view")
             verdicts.append(v)
-        else:
-            v = _damage(claim, views)
+        else:  # a defect seen in a close-up still counts, even if the item is cut off there
+            v = _damage(claim, [o for o in obs if o.usable or o.usability_issue == "item_cut_off"])
             verdicts.append(v if v.status == Status.CONTRADICTED else
                             Verdict(claim.id, Status.INCONCLUSIVE, "NO_DAMAGE_SEEN",
                                     "No damage shows in the listing photos, but they may not show every side.",

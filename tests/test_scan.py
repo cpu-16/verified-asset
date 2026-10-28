@@ -107,3 +107,11 @@ def test_scan_is_off_unless_enabled(client, monkeypatch):
     monkeypatch.delenv("SCAN_ENABLED")
     assert c.get("/scan").status_code == 404
     assert c.post("/api/scan", json={"title": "x", "images": [data_url()]}).status_code == 404
+
+
+def test_scan_keeps_damage_seen_in_a_close_up():
+    claims = [Claim("c1", ClaimType.NO_VISIBLE_DAMAGE, "No scratches")]
+    obs = [PhotoObservation(photo_id="p1", slot="listing 1", usable=True),
+           PhotoObservation(photo_id="p2", slot="listing 2", usable=False, usability_issue="item_cut_off",
+                            defects=(Defect("scratch", "top edge"),))]
+    assert scan(claims, obs)[0].status == Status.CONTRADICTED
