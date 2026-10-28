@@ -26,6 +26,7 @@ from .observation import PhotoObservation
 from .store import Store
 
 BASE = Path(__file__).parent
+SAMPLE = BASE.parent / "eval"
 DATA = Path(os.environ.get("DATA_DIR", "data"))
 MAX_PHOTO_BYTES = 12_000_000
 MAX_SCAN_PHOTOS, MAX_SCAN_BYTES = 6, 5_000_000
@@ -126,6 +127,20 @@ async def create(request: Request):
     return RedirectResponse(f"/l/{listing_id}?k={key}", status_code=303)
 
 
+@app.post("/sample")
+def create_sample():
+    claims = [Claim("c1", ClaimType.PIECE_COUNT, "Set of 4 chairs", "chair", "4"),
+              Claim("c2", ClaimType.COLOR, "White finish", value="white"),
+              Claim("c3", ClaimType.NO_VISIBLE_DAMAGE, "No scratches or stains"),
+              Claim("c4", ClaimType.UNCHECKABLE, "Solid oak, not veneer")]
+    listing_id, key = store.create_listing(
+        "White dining table with 4 chairs", "Barely used. Pick up only.", claims,
+        sample=True, capture_code="6YA7")
+    for slot in Slot:
+        store.add_photo(listing_id, str(slot), (SAMPLE / "photos" / f"dining-{slot}.jpg").read_bytes())
+    return RedirectResponse(f"/l/{listing_id}?k={key}", status_code=303)
+
+
 @app.get("/l/{listing_id}", response_class=HTMLResponse)
 def listing_page(request: Request, listing_id: str, k: str):
     row = seller_listing(listing_id, k)
@@ -171,7 +186,10 @@ def photo(listing_id: str, photo_id: str, k: str):
 
 @app.post("/l/{listing_id}/photo")
 async def upload(listing_id: str, k: str, slot: Slot = Form(...), file: UploadFile = File(...)):
-    seller_listing(listing_id, k)
+    row = seller_listing(listing_id, k)
+    if row["sample"]:
+        raise HTTPException(409, "The sample replays recorded observations of these photos, so they can't be changed. "
+                            "Start your own report to use your photos.")
     data = await file.read(MAX_PHOTO_BYTES + 1)
     if not data or len(data) > MAX_PHOTO_BYTES:
         raise HTTPException(413, "Photo missing or larger than 12 MB.")
@@ -186,7 +204,7 @@ async def upload(listing_id: str, k: str, slot: Slot = Form(...), file: UploadFi
 
 @app.post("/l/{listing_id}/check")
 def run_check(listing_id: str, k: str):
-    from .observe import CheckLimitExceeded, Photo, listing_check
+    from .observe import CheckLimitExceeded, Photo, ReplayObserver, listing_check
     from .observation import CheckResult
     row = seller_listing(listing_id, k)
     version = store.latest_version(listing_id)
@@ -194,7 +212,7 @@ def run_check(listing_id: str, k: str):
     current = store.current_photos(listing_id)
     photos = [Photo(id=p["id"], slot=s, data=store.photo_bytes(p["sha256"])) for s, p in current.items()]
     try:
-        observer = get_observer()
+        observer = ReplayObserver(SAMPLE / "recordings" / "muse-spark-1.3.json") if row["sample"] else get_observer()
     except ValueError:  # no MODEL_API_KEY / LOCAL_MODEL_URL on this server
         store.save_check(version["id"], {s: p["id"] for s, p in current.items()}, "none", False,
                          "no model is configured on this server yet", [], [], 0)
@@ -202,10 +220,15 @@ def run_check(listing_id: str, k: str):
     started = time.monotonic()
     observations, verdicts = [], []
     with listing_check(store, listing_id):
-        result = observer.observe(photos, count_subjects(claims))
+        if row["sample"] and any(subject != "chair" for subject in count_subjects(claims)):
+            result = CheckResult(observer.name, False, error=
+                                 "The sample only has recorded observations for counting chairs. "
+                                 "Start your own report to count something else.")
+        else:
+            result = observer.observe(photos, ["chair"] if row["sample"] else count_subjects(claims))
         if result.ok:
             obs = result.observations
-            sam = get_sam() if count_subjects(claims) else None
+            sam = get_sam() if not row["sample"] and count_subjects(claims) else None
             try:
                 if sam is not None:
                     from .segment import enrich
@@ -244,6 +267,8 @@ def issue(listing_id: str, k: str):
         photos={s: current[s]["sha256"] for s in checked}, check_id=check["id"],
         observer=check["observer"], issued_at=datetime.now(timezone.utc),
         fresh_photo_ids=capture_code_seen(row["capture_code"], obs), capture_code=row["capture_code"])
+    if row["sample"]:
+        payload["sample"] = True
     token = store.issue_report(listing_id, version["id"], check["id"], payload, reports.digest(payload))
     return RedirectResponse(f"/r/{token}", status_code=303)
 
@@ -303,6 +328,8 @@ def report_api(request: Request, token: str):
     row, view = public_report(token)
     p = view["payload"]
     out = {"state": view["state"], "title": p["title"], "url": str(request.url_for("report_page", token=token))}
+    if p.get("sample"):
+        out["sample"] = True
     if view["state"] != "active":  # an old link never shows claims it no longer vouches for
         return JSONResponse(out)
     return JSONResponse({**out, "issued_at": p["issued_at"], "expires_at": p["expires_at"],

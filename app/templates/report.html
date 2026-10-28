@@ -8,6 +8,7 @@
 {% if image %}<meta property="og:image" content="{{ image }}">{% endif %}
 {% endblock %}
 {% block main %}
+{% if payload.sample %}<p class="alert wait" role="note">Sample report: recorded Muse Spark observations of test photos, not a real listing.</p>{% endif %}
 {% if state != "active" %}
 <div class="state-page">
 <article class="card">
@@ -62,9 +63,9 @@
     <div class="validity-copy">
       <h2 class="pill supported"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-check"/></svg>Valid until {{ payload.expires_at|day }}</h2>
       {% if payload.capture_code %}
-      <p>The seller's one-time code for this listing was on paper in the photos, which makes reused or downloaded photos unlikely. It doesn't show who owns the item.</p>
+      <p>This listing's code was on paper in a usable photo, a signal against reused or downloaded photos. It doesn't show when the photos were taken, who owns the item, or that the seller still has it.</p>
       {% else %}
-      <p>The seller's one-time code wasn't visible, so these photos could be older or taken elsewhere.</p>
+      <p>This listing's code wasn't read in a usable photo, so these photos could be older or taken elsewhere.</p>
       {% endif %}
     </div>
     {% if payload.capture_code %}

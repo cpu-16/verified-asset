@@ -111,9 +111,9 @@ class Store:
 
     # listings and versions -------------------------------------------------
     def create_listing(self, title: str, description: str, claims: list[Claim],
-                       source_url: str = "", sample: bool = False) -> tuple[str, str]:
+                       source_url: str = "", sample: bool = False, capture_code: str = "") -> tuple[str, str]:
         listing_id, key = secrets.token_urlsafe(9), secrets.token_urlsafe(18)
-        code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(4))
+        code = capture_code or "".join(secrets.choice(CODE_ALPHABET) for _ in range(4))
         self.db.execute("BEGIN")
         self.db.execute("INSERT INTO listings VALUES (?,?,?,?,?,?)",
                         (listing_id, key, code, source_url, int(sample), now()))

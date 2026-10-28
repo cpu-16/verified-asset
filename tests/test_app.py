@@ -270,3 +270,105 @@ def test_claim_sentence_must_match_the_checked_value(client):
     good = {"type0": "piece_count", "text0": "Set of 4 chairs and one table", "subject0": "chair", "value0": "4",
             "type1": "color", "text1": "Off-white finish", "value1": "cream"}
     assert c.post("/new", data={**base, **good}, follow_redirects=False).status_code == 303
+
+
+@pytest.fixture
+def sample(client, monkeypatch):
+    main, c = client
+    monkeypatch.delenv("LOCAL_MODEL_URL", raising=False)
+    monkeypatch.setattr(main, "get_observer", lambda: pytest.fail("Sample accessed a live observer"))
+    monkeypatch.setattr(main, "get_sam", lambda: pytest.fail("Sample accessed SAM"))
+    r = c.post("/sample", follow_redirects=False)
+    assert r.status_code == 303
+    path = r.headers["location"]
+    listing_id, key = re.match(r"/l/([^?]+)\?k=(.+)", path).groups()
+    return main, c, listing_id, key
+
+
+def test_sample_end_to_end_without_key(sample):
+    import hashlib
+    import json
+    from app.reports import digest
+
+    main, c, listing_id, key = sample
+    row = main.store.listing(listing_id)
+    assert row["sample"] == 1 and row["capture_code"] == "6YA7"
+    version = main.store.latest_version(listing_id)
+    assert version["title"] == "White dining table with 4 chairs"
+    assert version["description"] == "Barely used. Pick up only."
+    photos = main.store.current_photos(listing_id)
+    assert set(photos) == {"front", "side", "detail"}
+    for slot, photo in photos.items():
+        original = (main.SAMPLE / "photos" / f"dining-{slot}.jpg").read_bytes()
+        assert main.store.photo_bytes(photo["sha256"]) == original
+        assert photo["sha256"] == hashlib.sha256(original).hexdigest()
+    page = c.get(f"/l/{listing_id}?k={key}").text
+    assert "Sample listing: recorded Muse Spark observations" in page
+    assert '<input type="file"' not in page
+    assert c.post(f"/l/{listing_id}/check?k={key}", follow_redirects=False).status_code == 303
+    r = c.post(f"/l/{listing_id}/report?k={key}", follow_redirects=False)
+    assert r.status_code == 303
+    path = r.headers["location"]
+    token = path.rsplit("/", 1)[1]
+    assert "Sample report: recorded Muse Spark observations of test photos, not a real listing." in c.get(path).text
+    api = c.get(f"/api/r/{token}").json()
+    assert api["sample"] is True
+    assert api["observer"].startswith("replay of muse-spark-1.3")
+    assert [v["status"] for v in api["verdicts"]] == ["supported", "supported", "contradicted", "inconclusive"]
+    assert [v["detail"] for v in api["verdicts"]] == [
+        "The front photo shows all 4 chairs.", "The item in the photo is white.",
+        "Seen: peeling in the detail photo (tabletop near edge).", "Photos can't show this."]
+    payload = json.loads(main.store.report(token)["payload"])
+    assert payload["sample"] is True and payload["capture_code"] == "6YA7"
+    assert api["digest"] == digest(payload)
+    del payload["sample"]
+    assert api["digest"] != digest(payload)
+    assert c.get(f"/r/{token}/photo/front").content == main.store.photo_bytes(photos["front"]["sha256"])
+    other = c.post("/sample", follow_redirects=False).headers["location"]
+    assert other != f"/l/{listing_id}?k={key}"
+    assert len(list(main.store.blobs.iterdir())) == 3
+
+
+def test_sample_photo_upload_rejected(sample):
+    main, c, listing_id, key = sample
+    before = {s: p["id"] for s, p in main.store.current_photos(listing_id).items()}
+    for slot in ("front", "side", "detail"):
+        r = c.post(f"/l/{listing_id}/photo?k={key}", data={"slot": slot},
+                   files={"file": ("p.jpg", jpeg(), "image/jpeg")})
+        assert r.status_code == 409
+        assert r.json()["detail"] == (
+            "The sample replays recorded observations of these photos, so they can't be changed. "
+            "Start your own report to use your photos.")
+    assert {s: p["id"] for s, p in main.store.current_photos(listing_id).items()} == before
+
+
+@pytest.mark.parametrize("subject", ["table", "dining chair"])
+def test_sample_changed_subject_fails_check(sample, subject):
+    main, c, listing_id, key = sample
+    c.post(f"/l/{listing_id}/check?k={key}")
+    r = c.post(f"/l/{listing_id}/edit?k={key}", data={
+        "title": "Edited", "type0": "piece_count", "text0": "Set of 4", "subject0": subject, "value0": "4"},
+        follow_redirects=False)
+    assert r.status_code == 303
+    page = c.post(f"/l/{listing_id}/check?k={key}").text
+    error = ("The sample only has recorded observations for counting chairs. "
+             "Start your own report to count something else.")
+    assert error in page
+    check = main.store.latest_check(main.store.latest_version(listing_id)["id"])
+    assert not check["ok"] and check["error"] == error
+    assert c.post(f"/l/{listing_id}/report?k={key}").status_code == 409
+
+
+@pytest.mark.parametrize("claim, status", [
+    ({"type0": "piece_count", "text0": "Set of 6 chairs", "subject0": "chair", "value0": "6"}, "contradicted"),
+    ({"type0": "color", "text0": "White finish", "value0": "white"}, "supported"),
+])
+def test_sample_claim_edits_replay(sample, claim, status):
+    main, c, listing_id, key = sample
+    assert c.post(f"/l/{listing_id}/edit?k={key}", data={"title": "Edited", **claim},
+                  follow_redirects=False).status_code == 303
+    c.post(f"/l/{listing_id}/check?k={key}")
+    r = c.post(f"/l/{listing_id}/report?k={key}", follow_redirects=False)
+    assert r.status_code == 303
+    api = c.get("/api" + r.headers["location"]).json()
+    assert api["sample"] is True and api["verdicts"][0]["status"] == status

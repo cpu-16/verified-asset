@@ -211,7 +211,7 @@ def scan(claims: list[Claim], obs: list[PhotoObservation]) -> list[Verdict]:
 
 
 def capture_code_seen(code: str, obs: list[PhotoObservation]) -> list[str]:
-    """Photo ids where the one-time capture code written on paper is legible."""
+    """Photo ids where the listing's capture code written on paper is legible."""
     want = code.strip().upper()
     return [o.photo_id for o in obs  # a photo the rules can't use can't vouch for the code either
             if o.usable and any(want == t.strip().upper().replace(" ", "") for t in o.visible_text)]
