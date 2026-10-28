@@ -91,6 +91,8 @@ a { color: var(--violet-hi); text-underline-offset: .18em; }
   margin: 0; padding: 7px var(--gutter); color: var(--mute); font-size: .8125rem; line-height: 1.4;
   border-bottom: 1px solid var(--line); text-align: center; background: rgba(10, 9, 16, .9);
 }
+.notice .short { display: none; }
+@media (max-width: 40em) { .notice .long { display: none; } .notice .short { display: inline; } }
 .chrome {
   position: sticky; top: 0; z-index: 40; transition: background-color .3s ease, border-color .3s ease;
   border-bottom: 1px solid transparent;
@@ -264,6 +266,7 @@ h2.pill { margin: 0 0 .6rem; font-size: .875rem; letter-spacing: 0; }
 .alert.wait, .callout.wait { color: var(--maybe); background: var(--maybe-bg); border-color: var(--maybe-line); }
 .alert.bad, .callout.bad { color: var(--no); background: var(--no-bg); border-color: var(--no-line); }
 .alert.sample { color: #CFC2FF; background: rgba(143, 102, 255, .12); border-color: rgba(143, 102, 255, .32); }
+@media (max-width: 40em) { .alert { font-size: .875rem; padding: 10px 12px; } }
 .callout h2 { margin: 0 0 .3rem; color: inherit; font-size: 1.2rem; }
 .callout p { margin: 0; font-weight: 400; color: var(--ink); }
 
@@ -374,6 +377,18 @@ h2.pill { margin: 0 0 .6rem; font-size: .875rem; letter-spacing: 0; }
   transition: border-color .2s ease, color .2s ease;
 }
 .tile-empty .ico { width: 2rem; height: 2rem; color: var(--violet-hi); }
+/* the photo (or the empty box) is the button: tapping it opens the camera, choosing a file uploads it */
+.pick { display: block; position: relative; cursor: pointer; border-radius: 10px; }
+.pick:focus-within { outline: 2px solid var(--violet-hi); outline-offset: 3px; }
+.pick input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip-path: inset(50%); }
+.pick .replace {
+  position: absolute; right: 8px; bottom: 8px; padding: .25rem .7rem; border-radius: 999px; font-size: .8125rem;
+  background: rgba(10, 9, 16, .78); color: var(--ink); border: 1px solid var(--line-2);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+@media (hover: hover) { .pick:hover .tile-empty { border-color: var(--violet-hi); color: var(--ink); } }
+.js .tile .upload { display: none; }
+.tile.uploading .pick { opacity: .55; pointer-events: none; }
 .tile.drag .tile-empty { border-color: var(--violet-hi); color: var(--ink); }
 @media (prefers-reduced-motion: no-preference) {
   .sam-box { animation: box-draw .8s var(--ease-out) .35s both; }
@@ -424,7 +439,7 @@ h2.pill { margin: 0 0 .6rem; font-size: .875rem; letter-spacing: 0; }
 .slide img { width: 100%; height: 17rem; object-fit: contain; display: block; background: #050409; }
 .slide figcaption { color: var(--mute); font-size: .8125rem; margin: 0; padding: 4px 14px 10px; }
 .thumbs { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 14px 14px; background: #050409; }
-.thumb { width: 60px; height: 60px; border-radius: 10px; overflow: hidden; flex: none; border: 2px solid transparent; display: block; opacity: .7; transition: opacity .2s ease, border-color .2s ease; }
+.thumb { width: 76px; height: 57px; border-radius: 10px; overflow: hidden; flex: none; border: 2px solid transparent; display: block; opacity: .7; transition: opacity .2s ease, border-color .2s ease; }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb[aria-current="true"] { border-color: var(--violet-hi); opacity: 1; }
 @media (max-width: 40em) {
@@ -493,7 +508,7 @@ h2.pill { margin: 0 0 .6rem; font-size: .875rem; letter-spacing: 0; }
   <symbol id="i-tag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 4h8.2l7.8 7.8-8.2 8.2L4 12.2z"/><circle cx="8.3" cy="8.3" r="1.4" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m10 13 2.2 2.2 4.4-4.6"/></symbol>
 </svg>
 <a class="skip" href="#main">Skip to content</a>
-<p class="notice" role="note">Independent hackathon demo. Not affiliated with Meta or Facebook Marketplace.</p>
+<p class="notice" role="note"><span class="long">Independent hackathon demo. Not affiliated with Meta or Facebook Marketplace.</span><span class="short">Independent demo. Not affiliated with Meta.</span></p>
 <div class="chrome" id="chrome">
 <header class="topbar">
   <a class="brand" href="/" aria-label="Verified Asset, home">

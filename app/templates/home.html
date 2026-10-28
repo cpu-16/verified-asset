@@ -173,6 +173,8 @@
 .bar { height: 10px; border-radius: 999px; background: rgba(255, 255, 255, .06); overflow: hidden; }
 .bar i { display: block; height: 100%; border-radius: inherit; width: var(--w); background: linear-gradient(90deg, var(--violet), var(--teal)); transform-origin: left; }
 .bar-row.weak .bar i { background: linear-gradient(90deg, #5C5872, #8D89A3); }
+.bar { display: flex; gap: 3px; }
+.bar-row.weak .bar i.miss { background: var(--no); }
 .bar-row .sub { color: var(--soft); font-size: .9rem; }
 .bar-row .sub b { font-weight: 500; }
 .bar-row .sub .bad { color: var(--no); }
@@ -343,7 +345,7 @@
       <ul class="counts">
         <li class="c-contradicted"><b>1</b>contradicted</li>
         <li class="c-supported"><b>2</b>supported</li>
-        <li class="c-inconclusive"><b>1</b>can't be checked from photos</li>
+        <li class="c-inconclusive"><b>1</b>inconclusive</li>
       </ul>
       <ul class="verdicts" data-stagger>
         <li class="verdict"><span class="pill contradicted"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-x"/></svg>Contradicted</span><div><p class="claim">No scratches or stains</p><p class="why">Seen: peeling in the detail photo (tabletop near edge).</p></div></li>
@@ -370,7 +372,7 @@
         </div>
         <div class="bar-row weak">
           <div class="top"><span class="name">Model shown the claim, asked to judge</span><span class="val">9/12</span></div>
-          <div class="bar"><i style="--w:75%"></i></div>
+          <div class="bar"><i style="--w:75%"></i><i class="miss" style="--w:16.67%" title="2 false reassurances"></i></div>
           <p class="sub"><b class="bad">2 false reassurances</b>, both on photos too blurry or too dark to tell</p>
         </div>
       </div>

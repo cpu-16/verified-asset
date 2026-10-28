@@ -75,7 +75,7 @@
   <ul class="counts">
     {% if summary.contradicted %}<li class="c-contradicted"><b>{{ summary.contradicted }}</b> contradicted</li>{% endif %}
     <li class="c-supported"><b>{{ summary.supported }}</b> supported</li>
-    <li class="c-inconclusive"><b>{{ summary.inconclusive }}</b> can't be checked from photos</li>
+    <li class="c-inconclusive"><b>{{ summary.inconclusive }}</b> inconclusive</li>
   </ul>
   <ul class="verdicts" data-stagger>
   {% for status in ["contradicted", "supported", "inconclusive"] %}{% for c in payload.claims if c.verdict.status == status %}

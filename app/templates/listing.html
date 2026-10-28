@@ -52,6 +52,7 @@
     {% for slot, prompt in slots %}
       <form class="tile" method="post" action="/l/{{ listing.id }}/photo?k={{ k }}" enctype="multipart/form-data">
         <input type="hidden" name="slot" value="{{ slot }}">
+        {% if not listing.sample %}<label class="pick">{% endif %}
         {% if photos.get(slot) %}
         <div class="scanwrap">
         {% if marks.get(slot) %}
@@ -69,13 +70,15 @@
           <span>Add a photo</span>
         </div>
         {% endif %}
+        {% if not listing.sample %}
+        <input type="file" name="file" accept="image/*" capture="environment" required aria-label="{{ "Replace the" if photos.get(slot) else "Add a" }} {{ slot }} photo">
+        {% if photos.get(slot) %}<span class="replace" aria-hidden="true">Replace</span>{% endif %}
+        </label>
+        {% endif %}
         <b>{{ slot|capitalize }}</b>
         <p class="soft">{{ prompt }}</p>
         {% if marks.get(slot) %}<p class="soft">Boxes: what SAM 3.1 located for the check. Only you see them.</p>{% endif %}
-        {% if not listing.sample %}
-        <input type="file" name="file" accept="image/*" capture="environment" required aria-label="{{ slot|capitalize }} photo">
-        <button type="submit"{% if photos.get(slot) %} class="secondary"{% endif %}>{{ "Replace photo" if photos.get(slot) else "Add photo" }}</button>
-        {% endif %}
+        {% if not listing.sample %}<button class="upload secondary" type="submit">Upload photo</button>{% endif %}
       </form>
     {% endfor %}
     </div>
@@ -118,8 +121,8 @@
         </ol>
         <p class="hint">The model never sees your claims. This takes a few seconds.</p>
       </div>
-      <div class="form-actions"><button class="big" type="submit">{{ "Check again" if check else "Check my claims" }}</button>
-      {% if check and check.ok %}<p class="mono">{{ check.observer }}, {{ check.latency_ms }} ms</p>{% endif %}</div>
+      <div class="form-actions"><button class="big{% if check and check.ok and not stale %} secondary{% endif %}" type="submit">{{ "Check again" if check else "Check my claims" }}</button>
+      {% if check and check.ok %}<p>{% if check.observer.startswith("replay") %}Replayed from recorded Muse Spark 1.3 observations{% else %}{{ check.observer }}, {{ "%.1f"|format(check.latency_ms / 1000) }} s{% endif %}</p>{% endif %}</div>
     </form>
   </section>
 
@@ -173,8 +176,10 @@
     ["dragleave", "drop"].forEach(function (name) {
       tile.addEventListener(name, function (e) { e.preventDefault(); tile.classList.remove("drag"); });
     });
+    function upload() { if (input.files && input.files.length) { tile.classList.add("uploading"); tile.requestSubmit(); } }
+    input.addEventListener("change", upload);
     tile.addEventListener("drop", function (e) {
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) input.files = e.dataTransfer.files;
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) { input.files = e.dataTransfer.files; upload(); }
     });
   });
   // While the check runs, show what is happening; the server's redirect replaces the page when it's done.
