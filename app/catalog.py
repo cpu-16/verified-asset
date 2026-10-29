@@ -19,8 +19,8 @@ class Slot(StrEnum):
 
 SLOT_PROMPTS = {
     Slot.FRONT: "Whole item from the front, filling most of the frame, good light.",
-    Slot.SIDE: "Whole item from one side, including the legs or base.",
-    Slot.DETAIL: "Close-up of the main surface (top or seat) where wear shows first.",
+    Slot.SIDE: "Whole item from one side, including its base or edges.",
+    Slot.DETAIL: "Close-up of where wear shows first, or of the part or label you describe.",
 }
 
 
