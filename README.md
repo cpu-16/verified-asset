@@ -29,7 +29,7 @@
 
 Local pickup is where second-hand deals go wrong: the "set of six" has four chairs, the "no scratches" top has a gouge, and you find out after an hour in traffic. Marketplace already helps sellers write and price listings. Verified Asset answers a different question: **which of this listing's claims does the photo evidence support, which does it contradict, and which can photos not settle at all?**
 
-The seller writes their claims, takes the few photos those claims need with the listing's code written on paper, and gets a report link to paste into the listing. Buyers open it without signing up.
+The seller chooses Furniture, Phones & tablets, Electronics & gaming, Clothing & shoes, or Kitchen & home, taps attribute suggestions or writes their claims, takes the few photos those claims need with the listing's code written on paper, and gets a report link to paste into the listing. Buyers open it without signing up.
 
 On the [live site](https://verified.adwentech.com), **Try the sample** runs the whole seller flow on the dining set below. It replays recorded Muse Spark observations of those photos, so it needs no photos of your own and makes no API call. Change "Set of 4 chairs" to 6 and check again to see a contradiction. The [demo guide](docs/demo-guide.md) walks through every screen with numbered screenshots.
 
@@ -76,7 +76,7 @@ Photo-checkable claims also end in *can't tell* when a required photo is missing
 
 ## Why the model doesn't judge the claims
 
-On the same 12 labelled cases we compared what ships, a detailed blind observation followed by the rules (without SAM), with a short prompt that shows the model the claim next to the photos and asks for a verdict.
+On the same 12 labelled furniture cases we compared what ships, a detailed blind observation followed by the rules (without SAM), with a short prompt that shows the model the claim next to the photos and asks for a verdict.
 
 | Observer | Blind + rules | Model judges the claim directly |
 |---|---|---|
@@ -85,7 +85,7 @@ On the same 12 labelled cases we compared what ships, a detailed blind observati
 
 A *false reassurance* is a "supported" that should not have been. Both models, shown "Three seat cushions" next to a photo too dark to make out the sofa, said **supported**. Blind, they reported the photo as too dark and the rule refused to decide. Spark judging directly also called four plainly visible chairs "contradicted".
 
-The two set-ups differ in their instructions as well as in who decides, so read this as evidence for the design rather than a clean measurement of one factor. It is a sanity check, not a benchmark: 12 cases with synthetic photos, labels written before the first run and not changed since. Full tables, the injection probe and the code-reading results are in [`eval/results`](eval/results).
+The two set-ups differ in their instructions as well as in who decides, so read this as evidence for the design rather than a clean measurement of one factor. It is a sanity check, not a benchmark: 12 furniture cases with synthetic photos, labels written before the first run and not changed since. Full tables, the injection probe and the code-reading results are in [`eval/results`](eval/results).
 
 ## What a report is and isn't
 

@@ -78,4 +78,4 @@ flowchart TB
 - **G2:** implement and test typed claim workflow, observation-to-verdict rules, correction/re-check, immutable report and invalidation/revocation.
 - **G3:** deploy and verify judge access from a fresh browser, showing clearly labelled live or recorded inference.
 
-Hackathon scope: **Furniture/home goods only**. Production scope remains Furniture/home goods plus Clothing/accessories. Do not infer overall production readiness from one synthetic-image API call, historical offline tests or a polished demo.
+Historical planned hackathon scope: **Furniture/home goods only**. The implemented catalogue now offers **Furniture, Phones & tablets, Electronics & gaming, Clothing & shoes, and Kitchen & home**, including `part_no_damage` and `label_text` rules (see `app/catalog.py` and `app/adjudicate.py`). The recorded 12-case evaluation remains furniture-only; it does not validate the new categories or rules. The production scope in D-01–D-06 remains a historical decision. Do not infer overall production readiness from one synthetic-image API call, historical offline tests or a polished demo.

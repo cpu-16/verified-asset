@@ -237,10 +237,10 @@
   <div class="hero-copy">
     <h1 class="hero-title" id="hero-title">
       <span class="line"><span style="--l:0">Second-hand</span></span>
-      <span class="line"><span style="--l:1">furniture.</span></span>
+      <span class="line"><span style="--l:1">items.</span></span>
       <span class="line"><span style="--l:2">First-hand evidence.</span></span>
     </h1>
-    <p class="lede fade" style="--l:0">Sellers write their claims and take the photos those claims need. Meta's Muse Spark describes each photo without seeing the claims, and fixed rules show buyers what's supported, what's contradicted, and what photos can't settle.</p>
+    <p class="lede fade" style="--l:0">Sellers choose a category, tap attributes or write their claims, and take the photos those claims need. Meta's Muse Spark describes each photo without seeing the claims, and fixed rules show buyers what's supported, what's contradicted, and what photos can't settle.</p>
     <div class="ctas fade" style="--l:1">
       <form method="post" action="/sample"><button class="big" type="submit">Try the sample</button></form>
       <a class="button secondary big" href="/new">Start a report</a>
@@ -250,7 +250,7 @@
       <li><b>0</b><span>false reassurances</span></li>
       <li><b>3.5¢</b><span>per live check</span></li>
     </ul>
-    <p class="stats-note fade" style="--l:3">From our 12-case evaluation with Muse Spark and one live check. <a href="#evaluation">How we measured</a></p>
+    <p class="stats-note fade" style="--l:3">From our 12-case furniture evaluation with Muse Spark and one live check. <a href="#evaluation">How we measured</a></p>
   </div>
   <div class="stage" aria-hidden="true" id="stage">
     <div class="glow"></div>
@@ -301,7 +301,7 @@
       <span class="n">1</span>
       <div class="art"><div class="chips"><span>4 chairs</span><span>White</span><span>No scratches</span><span class="off">Solid oak</span></div></div>
       <h3>Claims first</h3>
-      <p>Each claim gets a type: a piece count, a colour, no visible damage, or other. Other claims stay on the report, marked as something photos can't show.</p>
+      <p>Each claim gets a type: a piece count, a colour, no visible damage, no visible damage on a specific part, label text, or other. Other claims stay on the report, marked as something photos can't show.</p>
     </li>
     <li class="card">
       <span class="n">2</span>
@@ -360,7 +360,7 @@
 <section class="section" id="evaluation" aria-labelledby="eval-title">
   <div class="section-head" data-reveal>
     <h2 id="eval-title">Why the model doesn't judge the claims</h2>
-    <p>We ran 12 labelled cases two ways with Muse Spark 1.3: blind observation followed by the rules, and the model shown the claim next to the photos and asked for a verdict.</p>
+    <p>We ran 12 labelled furniture cases two ways with Muse Spark 1.3: blind observation followed by the rules, and the model shown the claim next to the photos and asked for a verdict.</p>
   </div>
   <div class="eval">
     <div class="card" data-reveal>
@@ -376,7 +376,7 @@
           <p class="sub"><b class="bad">2 false reassurances</b>, both on photos too blurry or too dark to tell</p>
         </div>
       </div>
-      <p class="eval-note">Synthetic photos; labels written before the first run. A sanity check, not a benchmark: the two set-ups also differ in their instructions. Muse Glimmer 30B gave the same split. The whole run cost $0.22.</p>
+      <p class="eval-note">Synthetic furniture photos; labels written before the first run. The new categories and part/label rules are not covered by this evaluation. A sanity check, not a benchmark: the two set-ups also differ in their instructions. Muse Glimmer 30B gave the same split. The whole run cost $0.22.</p>
     </div>
     <div class="card quote" data-reveal>
       <h3>The case that decided it</h3>

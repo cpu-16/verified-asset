@@ -2,7 +2,9 @@
 
 A step-by-step walk through the live demo at **https://verified.adwentech.com**, with real screenshots. Numbers on each picture match the list under it.
 
-Verified Asset lets a second-hand furniture seller back up what they write in a listing. The seller writes claims, takes the photos those claims need, and Meta's Muse Spark describes each photo **without seeing the claims**. Fixed rules then compare the description with each claim and say what is supported, what is contradicted, and what the photos can't settle. The buyer gets a sealed report link.
+Verified Asset lets a second-hand item seller back up what they write in a listing. The seller writes claims, takes the photos those claims need, and Meta's Muse Spark describes each photo **without seeing the claims**. Fixed rules then compare the description with each claim and say what is supported, what is contradicted, and what the photos can't settle. The buyer gets a sealed report link.
+
+The category picker offers Furniture, Phones & tablets, Electronics & gaming, Clothing & shoes, and Kitchen & home. Tap attribute suggestions or add a custom claim. The screenshots below retain the furniture walkthrough.
 
 There are two ways in:
 
@@ -15,7 +17,7 @@ There are two ways in:
 
 1. **Try the sample** opens a ready-made listing with photos, so you can run the check right away.
 2. **Start a report** begins your own listing (step 10).
-3. **How we measured** jumps to the evaluation: on 12 labelled cases, blind observation plus fixed rules got 12 right with no false reassurance; the model judging the claim directly got 9, and twice said "supported" for a photo too blurry or too dark to tell.
+3. **How we measured** jumps to the evaluation: on 12 labelled furniture cases, blind observation plus fixed rules got 12 right with no false reassurance; the model judging the claim directly got 9, and twice said "supported" for a photo too blurry or too dark to tell.
 
 ## 2. The seller's page
 
@@ -91,7 +93,7 @@ The buyer never sees SAM's boxes or the seller's private page.
 ![Describe your item](guide/10-new.webp)
 
 1. The title buyers will see.
-2. The claim type: number of pieces, color, no visible damage, or other.
+2. Choose a category and tap attributes. Claim types include number of pieces, color, no visible damage, no visible damage on a part, label text, or other. Label text does not certify brand authenticity.
 3. The claim as you'd write it to a buyer.
 4. For a count, what to count ("chair", "shelf").
 5. The value to check: the number, or the color.
@@ -127,6 +129,6 @@ It needs the model key on the server, and each phone can film 10 items a day.
 
 - The photos are ours, taken for this demo. No photo from a real listing is ever sent to a model.
 - The sample's observations are a recording of a real Muse Spark 1.3 run on those photos. The rules that turn them into verdicts run live, every time.
-- The evaluation numbers come from `eval/` in this repository.
+- The evaluation numbers come from `eval/` in this repository: 12 furniture cases, not a validation of the new categories or part/label rules.
 
 Screenshots for this guide come from `docs/guide/shoot.py`, which drives the live site with the sample only.
