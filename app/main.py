@@ -321,6 +321,11 @@ async def upload(listing_id: str, k: str, slot: Slot = Form(...), file: UploadFi
 
 @app.post("/l/{listing_id}/check")
 def run_check(listing_id: str, k: str):
+    check_listing(listing_id, k)
+    return RedirectResponse(f"/l/{listing_id}?k={k}#check", status_code=303)
+
+
+def check_listing(listing_id: str, k: str):
     from .observe import CheckLimitExceeded, Photo, ReplayObserver, listing_check
     from .observation import CheckResult
     row = seller_listing(listing_id, k)
@@ -333,7 +338,7 @@ def run_check(listing_id: str, k: str):
     except ValueError:  # no MODEL_API_KEY / LOCAL_MODEL_URL on this server
         store.save_check(version["id"], {s: p["id"] for s, p in current.items()}, "none", False,
                          "no model is configured on this server yet", [], [], 0)
-        return RedirectResponse(f"/l/{listing_id}?k={k}#check", status_code=303)
+        return None
     started = time.monotonic()
     observations, verdicts = [], []
     with listing_check(store, listing_id):
@@ -356,15 +361,20 @@ def run_check(listing_id: str, k: str):
                 observations = [o.to_dict() for o in obs]
                 verdicts = [v.to_dict() for v in adjudicate(claims, obs)]
     latency = result.latency_ms or int((time.monotonic() - started) * 1000)
-    store.save_check(version["id"], {s: p["id"] for s, p in current.items()}, observer.name,
+    check_id = store.save_check(version["id"], {s: p["id"] for s, p in current.items()}, observer.name,
                      result.ok, result.error, observations, verdicts, latency)
     store.log(listing_id, "check_run", observer=observer.name, ok=result.ok, error=result.error,
               version=version["version"])
-    return RedirectResponse(f"/l/{listing_id}?k={k}#check", status_code=303)
+    return check_id
 
 
 @app.post("/l/{listing_id}/report")
 def issue(listing_id: str, k: str):
+    token = issue_listing(listing_id, k)
+    return RedirectResponse(f"/r/{token}", status_code=303)
+
+
+def issue_listing(listing_id: str, k: str):
     row = seller_listing(listing_id, k)
     version = store.latest_version(listing_id)
     check = store.latest_check(version["id"])
@@ -387,7 +397,7 @@ def issue(listing_id: str, k: str):
     if row["sample"]:
         payload["sample"] = True
     token = store.issue_report(listing_id, version["id"], check["id"], payload, reports.digest(payload))
-    return RedirectResponse(f"/r/{token}", status_code=303)
+    return token
 
 
 @app.post("/l/{listing_id}/edit")
@@ -430,7 +440,15 @@ def report_page(request: Request, token: str):
         **view, "token": token, "summary": reports.summary(view["payload"]),
         "checked_at": store.check(row["check_id"])["created_at"],
         "url": str(request.url), "photos": photos,
-        "image": f"{request.base_url}r/{token}/photo/front" if any(s == "front" for s, _ in photos) else ""})
+        "image": f"{request.base_url}r/{token}/card.jpg"})
+
+
+@app.get("/r/{token}/card.jpg")
+def report_card(token: str):
+    from .cards import render_card
+    _, view = public_report(token)
+    return Response(render_card(store, view), media_type="image/jpeg",
+                    headers={"Cache-Control": "public, max-age=60, must-revalidate"})
 
 
 @app.get("/r/{token}/photo/{slot}")
@@ -575,3 +593,8 @@ async def scan_page(request: Request, title: str = Form(""), description: str = 
     except HTTPException as exc:
         ctx["error"] = exc.detail
     return templates.TemplateResponse(request, "scan.html", ctx)
+
+
+from .whatsapp import router as whatsapp_router
+
+app.include_router(whatsapp_router)

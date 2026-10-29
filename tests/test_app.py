@@ -98,7 +98,7 @@ def test_active_report_shows_the_checked_photos(client):
     c.post(f"/l/{listing_id}/check?k={key}")
     token = c.post(f"/l/{listing_id}/report?k={key}", follow_redirects=False).headers["location"].rsplit("/", 1)[1]
     page = c.get(f"/r/{token}").text
-    assert f"/r/{token}/photo/front" in page and f'og:image" content="http://testserver/r/{token}/photo/front"' in page
+    assert f"/r/{token}/photo/front" in page and f'og:image" content="http://testserver/r/{token}/card.jpg"' in page
     r = c.get(f"/r/{token}/photo/front")
     assert r.status_code == 200 and r.headers["content-type"] == "image/jpeg"
     assert c.get(f"/r/{token}/photo/detail").status_code == 404

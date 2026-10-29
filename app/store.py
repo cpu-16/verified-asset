@@ -19,6 +19,11 @@ from .catalog import Claim
 CODE_ALPHABET = "ACDEFGHJKMNPQRTUVWXY34679"  # no look-alikes (0/O, 1/I/L, 2/Z, 5/S, 8/B)
 
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS wa_sessions (
+  sender TEXT PRIMARY KEY, listing_id TEXT NOT NULL REFERENCES listings(id),
+  description TEXT NOT NULL, images TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS wa_messages (
+  id TEXT PRIMARY KEY, sender TEXT NOT NULL, timestamp INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS model_cache (
   key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS paid_checks (

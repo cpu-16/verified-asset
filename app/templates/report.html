@@ -5,7 +5,11 @@
 <meta property="og:description" content="{% if state == 'active' %}{{ summary.supported }} supported, {{ summary.contradicted }} contradicted, {{ summary.inconclusive }} can't be checked from photos.{% else %}This report is {{ state }}.{% endif %}">
 <meta property="og:type" content="article">
 <meta property="og:url" content="{{ url }}">
-{% if image %}<meta property="og:image" content="{{ image }}">{% endif %}
+{% if image %}<meta property="og:image" content="{{ image }}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">{% endif %}
 {% endblock %}
 {% block main %}
 {% set short_code = (digest[:4] ~ " " ~ digest[4:8])|upper %}

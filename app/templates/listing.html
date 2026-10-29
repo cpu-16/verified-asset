@@ -390,6 +390,14 @@
       }
     });
   });
+  if (navigator.share) document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    var share = document.createElement("button");  // on a phone: the native sheet with WhatsApp, Messenger
+    share.type = "button"; share.className = "secondary"; share.textContent = "Share";
+    share.addEventListener("click", function () {
+      navigator.share({ url: btn.getAttribute("data-copy") }).catch(function () {});
+    });
+    btn.after(share);
+  });
   document.querySelectorAll(".tile").forEach(function (tile) {
     var input = tile.querySelector('input[type="file"]');
     if (!input) return;
