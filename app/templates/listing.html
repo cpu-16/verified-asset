@@ -17,17 +17,33 @@
 .wizard .card { padding: 14px; margin-bottom: 10px; }
 .wizard .seller-main > section > h2 { font-size: 1.15rem; }
 .wizard .seller-main > section > .soft { font-size: .85rem; margin: .3rem 0; }
-.wizard .tiles { display: block; margin-top: 8px; }
+.wizard .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
 .wizard .tile { border: 0; padding: 0; background: none; gap: 5px; }
 .wizard .shot { width: fit-content; max-width: 147px; margin: auto; }
-.wizard .tile .shot img { height: auto; }
-.wizard .tile img { height: 110px; object-fit: contain; aspect-ratio: auto; }
-.wizard .tile-empty { min-height: 90px; aspect-ratio: auto; }
+.wizard .tile .shot img { height: 76px; }
+.wizard .tile img { height: 76px; object-fit: contain; aspect-ratio: auto; }
+.wizard .tile-empty { min-height: 76px; aspect-ratio: auto; }
 .wizard .tile .pick { margin: 0; }
 .wizard .page-controls { align-items: center; justify-content: space-between; margin: 8px 0; }
 .wizard .page-controls button { min-height: 44px; padding: 6px 10px; font-size: .8rem; }
 .wizard .page-controls span { font-size: .8rem; }
-.wizard .verdict { padding: 6px 0; }
+.wizard .verdict { display: block; padding: 6px 0; }
+.verdict details { width: 100%; }
+.verdict summary { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
+.verdict summary .pill { flex: 0 0 auto; padding: 5px; }
+.verdict summary .claim { font-size: .9rem; }
+.check-explanation { font-size: .85rem; margin: 8px 0; }
+.verdict-summary { font-size: .75rem; margin: 8px 0; }
+.wizard h2[tabindex="-1"]:focus { outline: none; }
+.wizard-links { flex-wrap: nowrap; }
+.wizard-links a { flex: 1; font-size: 1rem; }
+.wizard .tile-empty span { font-size: .75rem; }
+.wizard .tile-empty .ico { width: 1.2rem; height: 1.2rem; }
+.wizard .pick .replace { right: 2px; bottom: 2px; padding: 2px 4px; font-size: .65rem; }
+.wizard .photo-label { width: 100%; margin: 0; padding: 4px 0; min-height: 44px; font-size: .85rem; }
+.wizard .tile[data-selected] .photo-label { border-color: var(--violet-hi); }
+.photo-instruction { margin-top: 8px; font-size: .85rem; }
+.photo-instruction p { margin: 4px 0; }
 .wizard .verdict .why, .wizard .verdict .ask { font-size: .85rem; }
 .wizard .form-actions { margin-top: 8px; gap: 6px; }
 .wizard .form-actions p { font-size: .75rem; }
@@ -56,7 +72,7 @@
   <h1 class="display">{{ ("Check the draft" if draft else "Film your item") if filming else version.title }}</h1>
   {% if version.description %}<p class="lede">{{ version.description }}</p>{% endif %}
 </div>
-<div class="seller" data-initial-step="{{ 'draft' if draft else ('code' if not photos else ('photos' if not d2 else 'check')) }}">
+<div class="seller" data-check-ready="{{ 'yes' if d3 else 'no' }}" data-photos-ready="{{ 'yes' if d2 else 'no' }}" data-initial-step="{{ 'draft' if draft else ('code' if not photos else ('photos' if not d2 else 'check')) }}">
 <nav class="wizard-bar" aria-label="Step navigation" hidden><p id="step-status" aria-live="polite"></p><div class="wizard-links"></div></nav>
 <details class="wizard-info" hidden><summary>{{ 'Sample · ' if listing.sample else '' }}Listing details &amp; privacy</summary></details>
 <div class="wizard-actions" hidden><button type="button" class="secondary" id="step-back">Back</button><button type="button" id="step-next">Next</button></div>
@@ -155,12 +171,13 @@
         </label>
         {% endif %}
         <b>{{ slot|capitalize }}</b>
-        <p class="soft">{{ prompt }}</p>
+        <div class="photo-guidance"><p class="soft">{{ prompt }}</p>
         {% if slot == 'detail' %}{% for claim in claims %}
           {% if claim.type == 'part_no_damage' %}<p class="hint">Show the entire {{ claim.subject }}, including its edges.</p>{% endif %}
           {% if claim.type == 'label_text' %}<p class="hint">Make the label text “{{ claim.value }}” legible.</p>{% endif %}
         {% endfor %}{% endif %}
         {% if marks.get(slot) %}<p class="soft">Boxes: what SAM 3.1 located for the check. Only you see them.</p>{% endif %}
+        </div>
         {% if not listing.sample %}<button class="upload secondary" type="submit">Upload photo</button>{% endif %}
       </form>
     {% endfor %}
@@ -169,7 +186,10 @@
 
   <section class="card" id="check" data-step="Check">
     <h2>Check your claims</h2>
+    <details class="check-explanation"><summary>How this check works</summary>
     <p class="soft">The model describes your photos without seeing your claims. Fixed rules then compare.</p>
+    {% if check and check.ok %}<p>{% if check.observer.startswith("replay") %}Replayed from recorded Muse Spark 1.3 observations{% else %}{{ check.observer }}, {{ "%.1f"|format(check.latency_ms / 1000) }} s{% endif %}</p>{% endif %}
+    </details>
     {% if check and not check.ok %}
     <p class="alert bad" role="alert">
       <svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-alert"/></svg>
@@ -182,17 +202,23 @@
       <span>Your photos changed after the last check. Run it again before sharing a report.</span>
     </p>
     {% endif %}
-    <ul class="verdicts" data-stagger>
+    {% if verdicts %}
+    <p class="verdict-summary">{{ verdicts.values()|selectattr('status', 'equalto', 'supported')|list|length }} supported · {{ verdicts.values()|selectattr('status', 'equalto', 'contradicted')|list|length }} contradicted · {{ verdicts.values()|selectattr('status', 'equalto', 'inconclusive')|list|length }} can't tell</p>
+    {% endif %}
+    <ul class="verdicts">
     {% for c in claims %}{% set v = verdicts.get(c.id) %}
       <li class="verdict {{ v.status if v else 'unchecked' }}">
+        <details><summary>
         <span class="pill {{ v.status if v else 'unchecked' }}">
-          <svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#{{ {'supported': 'i-check', 'contradicted': 'i-x', 'inconclusive': 'i-ask'}.get(v.status, 'i-none') if v else 'i-none' }}"/></svg>{{ v.status|capitalize if v else "Not checked" }}
+          <svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#{{ {'supported': 'i-check', 'contradicted': 'i-x', 'inconclusive': 'i-ask'}.get(v.status, 'i-none') if v else 'i-none' }}"/></svg><span{% if v %} class="sr"{% endif %}>{{ ("Can't tell" if v.status == "inconclusive" else v.status|capitalize) if v else "Not checked" }}</span>
         </span>
+          <span class="claim">{{ c.text }}</span>
+        </summary>
         <div>
-          <p class="claim">{{ c.text }}</p>
           {% if c.by == "video" %}<p class="by"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-spark"/></svg>Drafted from your video</p>{% endif %}
           {% if v %}<p class="why">{{ v.detail }}</p>{% if v.request %}<p class="ask"><span class="ask-label">To settle it:</span> {{ v.request }}.</p>{% endif %}{% endif %}
         </div>
+        </details>
       </li>
     {% endfor %}
     </ul>
@@ -206,7 +232,7 @@
         <p class="hint">The model never sees your claims. This takes a few seconds.</p>
       </div>
       <div class="form-actions"><button class="big{% if check and check.ok and not stale %} secondary{% endif %}" type="submit">{{ "Check again" if check else "Check my claims" }}</button>
-      {% if check and check.ok %}<p>{% if check.observer.startswith("replay") %}Replayed from recorded Muse Spark 1.3 observations{% else %}{{ check.observer }}, {{ "%.1f"|format(check.latency_ms / 1000) }} s{% endif %}</p>{% endif %}</div>
+      </div>
     </form>
   </section>
 
@@ -253,7 +279,7 @@
   document.querySelectorAll("#main > .alert, #main > .page-head").forEach(function (el) { info.appendChild(el); });
   panels.forEach(function (panel, i) {
     var a = document.createElement("a"); a.href = "#" + panel.id;
-    a.textContent = i + 1; a.setAttribute("aria-label", panel.dataset.step);
+    a.textContent = panel.dataset.step; a.setAttribute("aria-label", panel.dataset.step);
     links.appendChild(a);
   });
   function show(id, focus) {
@@ -265,7 +291,10 @@
       if (i === index) a.setAttribute("aria-current", "step"); else a.removeAttribute("aria-current");
     });
     document.getElementById("step-status").textContent = "Step " + (index + 1) + " of " + panels.length + " · " + panels[index].dataset.step;
-    back.disabled = index === 0; next.disabled = index === panels.length - 1;
+    back.disabled = index === 0;
+    next.hidden = index === panels.length - 1 || (id === "check" && seller.dataset.checkReady !== "yes") || id === "draft";
+    next.classList.toggle("secondary", id !== "code" && !(id === "check" && seller.dataset.checkReady === "yes"));
+    next.disabled = id === "photos" && seller.dataset.photosReady !== "yes";
     var edit = seller.querySelector(".edit"); if (edit) edit.hidden = !["check", "share"].includes(id);
     if (focus) { var heading = panels[index].querySelector("h2"); heading.tabIndex = -1; heading.focus({preventScroll: true}); }
     window.scrollTo(0, 0);
@@ -274,7 +303,7 @@
   back.addEventListener("click", function () { go(current - 1); });
   next.addEventListener("click", function () { go(current + 1); });
   window.addEventListener("hashchange", function () { show(location.hash.slice(1) || seller.dataset.initialStep, true); });
-  // Paginate photos and results without removing their forms or evidence from the DOM.
+  // Only the optional draft editor uses field pagination.
   function paginate(selector, noun, initial) {
     var list = seller.querySelector(selector); if (!list) return;
     var rows = Array.from(list.children); if (!rows.length) return;
@@ -321,8 +350,33 @@
     draftForm.prepend(fields);
     paginate(".draft-fields", "Field");
   }
-  paginate(".tiles", "Photo", function (row) { return row.dataset.present === "no"; });
-  paginate(".verdicts", "Result");
+  var tiles = Array.from(seller.querySelectorAll(".tile"));
+  if (tiles.length) {
+    var guidance = document.createElement("div"); guidance.className = "photo-instruction";
+    guidance.setAttribute("aria-live", "polite");
+    seller.querySelector(".tiles").after(guidance);
+    function selectPhoto(tile) {
+      tiles.forEach(function (row) {
+        row.toggleAttribute("data-selected", row === tile);
+        row.querySelector(".photo-label").setAttribute("aria-pressed", String(row === tile));
+      });
+      guidance.replaceChildren(tile.querySelector(".photo-guidance").cloneNode(true));
+      guidance.firstChild.hidden = false;
+    }
+    tiles.forEach(function (tile) {
+      var name = tile.querySelector("b"), button = document.createElement("button");
+      button.type = "button"; button.className = "photo-label secondary"; button.textContent = name.textContent;
+      button.setAttribute("aria-label", name.textContent + (tile.dataset.present === "yes" ? " photo added. Show instructions" : " photo missing. Show instructions"));
+      name.replaceWith(button); tile.querySelector(".photo-guidance").hidden = true;
+      button.addEventListener("click", function () { selectPhoto(tile); });
+      var pick = tile.querySelector(".pick");
+      if (pick) {
+        pick.addEventListener("click", function () { selectPhoto(tile); });
+        pick.addEventListener("focusin", function () { selectPhoto(tile); });
+      }
+    });
+    selectPhoto(tiles.find(function (tile) { return tile.dataset.present === "no"; }) || tiles[0]);
+  }
   document.body.classList.add("wizard"); bar.hidden = info.hidden = seller.querySelector(".wizard-actions").hidden = false;
   var requested = location.hash.slice(1);
   var initial = panels.some(function (p) { return p.id === requested; }) ? requested : seller.dataset.initialStep;

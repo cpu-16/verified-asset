@@ -521,6 +521,11 @@ def test_seller_step_markers_and_initial_state(sample):
     for step in ('code', 'photos', 'check', 'share'):
         assert f'id="{step}" data-step="{step.capitalize()}"' in page
     assert 'data-initial-step="check"' in page
+    assert 'class="photo-guidance"' in page
+    assert '<details><summary>' in page
+    assert 'paginate(".tiles"' not in page
+    assert 'paginate(".verdicts"' not in page
+    assert 'data-check-ready="no"' in page
     assert 'id="step-back"' in page and 'id="step-next"' in page
     film = c.post('/film', follow_redirects=False).headers['location']
     page = c.get(film).text
