@@ -12,6 +12,7 @@
 <meta name="twitter:card" content="summary_large_image">{% endif %}
 {% endblock %}
 {% block main %}
+<p class="soft"><a href="/r/{{ token }}/listing">See it on a listing (demo)</a></p>
 {% set short_code = (digest[:4] ~ " " ~ digest[4:8])|upper %}
 {% if payload.sample %}<p class="alert sample" role="note"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-info"/></svg><span>Sample report: recorded Muse Spark observations of test photos, not a real listing.</span></p>{% endif %}
 {% if state != "active" %}

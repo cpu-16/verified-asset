@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ post.title if post else payload.title }} · Listing demo</title>
+<meta property="og:image" content="{{ image }}">
+<meta property="og:title" content="Listing demo: {{ post.title if post else payload.title }}">
+<meta property="og:description" content="A simulated buyer view. Not a real marketplace listing.">
+<style>
+:root { color-scheme: light; font: 20px/1.5 system-ui, sans-serif; color: #252721; background: #f6f5f1; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: inherit; text-underline-offset: .2em; overflow-wrap: anywhere; }
+a:focus-visible, .gallery:focus-visible { outline: .15rem solid #566544; outline-offset: .2rem; }
+::selection { background: #dce5cc; color: #252721; }
+.demo { position: sticky; top: 0; z-index: 2; margin: 0; padding: .65rem .8rem; background: #ece7d7; border-bottom: 1px solid #c6c1b2; font-size: .7rem; text-align: center; font-weight: 650; }
+main { max-width: 42rem; margin: auto; background: #fff; min-height: 100vh; }
+.gallery { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-color: #818574 #eeeee8; }
+figure { flex: 0 0 100%; min-width: 0; margin: 0; scroll-snap-align: start; }
+figure img { display: block; width: 100%; height: 17rem; object-fit: contain; background: #eeeee8; }
+figcaption { padding: .4rem 1rem; font-size: .75rem; color: #575b51; }
+.content { padding: .5rem 1rem 2rem; }
+h1 { font-size: 1.6rem; line-height: 1.18; letter-spacing: -.025em; margin: .5rem 0; overflow-wrap: anywhere; }
+h2 { font-size: 1.1rem; margin: 1.5rem 0 .5rem; }
+p { margin: .5rem 0; }
+.soft { color: #575b51; font-size: .8rem; }
+.evidence { display: block; margin: 1rem 0; padding: .8rem; border: 1px solid #a7b297; border-radius: .6rem; background: #eff3e9; text-decoration: none; }
+.evidence:hover { background: #e4ebdb; }
+.evidence strong, .evidence span { display: block; }
+.evidence span { margin-top: .35rem; }
+.counts .ok { color: #1f7a3a; } .counts .no { color: #b3261e; } .counts .na { color: #8a5a00; }
+.counts { font-variant-numeric: tabular-nums; }
+.description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.sample { padding: .6rem 1rem; margin: 0; background: #fff2cd; font-size: .8rem; }
+.seller { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #d3d5cd; }
+.seller h2 { margin-top: 0; }
+button { width: 100%; padding: .7rem; margin-top: 1rem; border: 1px solid #c6c9be; border-radius: .4rem; font: inherit; background: #eceee7; color: #62665a; cursor: not-allowed; }
+@media (min-width: 40em) { .content { padding: 1rem 2rem 2rem; } figure img { height: 24rem; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<p class="demo">DEMO · Not Facebook Marketplace · Not affiliated with Meta</p>
+<main>
+{% if payload.sample %}<p class="sample">Sample · Not a real listing. Recorded observations of test photos.</p>{% endif %}
+{% if post %}
+<div class="gallery" tabindex="0" role="region" aria-label="Item photos. Swipe or use arrow keys to browse.">
+{% for photo in post.photos %}
+<figure><img src="{{ photo }}" alt="{{ photo.rsplit('/', 1)[-1]|capitalize }} view of the item"{% if not loop.first %} loading="lazy"{% endif %}><figcaption>{{ loop.index }} / {{ post.photos|length }} · {{ photo.rsplit('/', 1)[-1]|capitalize }} view</figcaption></figure>
+{% endfor %}
+</div>
+{% endif %}
+<div class="content">
+<h1>{{ post.title if post else payload.title }}</h1>
+{% if post %}
+<p class="soft">Listed just now · Demo listing</p>
+<a class="evidence" href="/r/{{ token }}"><strong>Verified evidence · See report</strong><span class="counts" aria-label="{{ summary.supported }} supported, {{ summary.contradicted }} contradicted, {{ summary.inconclusive }} inconclusive"><b class="ok">{{ summary.supported }} ✓</b> · <b class="no">{{ summary.contradicted }} ✕</b> · <b class="na">{{ summary.inconclusive }} ?</b></span></a>
+<p class="soft">Photo evidence only. This does not verify the seller or guarantee the item.</p>
+<h2>Description</h2>
+<div class="description">{{ post.description }}</div>
+{% else %}
+<a class="evidence" href="/r/{{ token }}"><strong>{{ 'Report withdrawn' if state == 'revoked' else 'Report no longer valid' }}</strong><span>{{ 'Expired. ' if state == 'expired' else '' }}Ask the seller for a new report.</span></a>
+{% endif %}
+<section class="seller" aria-labelledby="seller-title">
+<h2 id="seller-title">Seller information</h2>
+<p>Example seller</p>
+<p class="soft">Illustrative profile for this demo.</p>
+<button disabled>Message</button>
+<p class="soft">Messaging is unavailable in this simulation.</p>
+</section>
+</div>
+</main>
+</body>
+</html>

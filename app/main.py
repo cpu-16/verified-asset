@@ -23,6 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import reports
+from .marketplace import build_post
 from .adjudicate import COLOR_FAMILIES, adjudicate, capture_code_seen, color_family, scan
 from .catalog import CATEGORIES, SLOT_PROMPTS, SUBJECT, Claim, ClaimType, Slot, count_subjects, required_slots
 from .observation import PhotoObservation
@@ -267,12 +268,16 @@ def listing_page(request: Request, listing_id: str, k: str):
     draft = None if row["sample"] else store.video_draft(listing_id, version["version"])
     if draft:
         draft["claims"] = [Claim.from_dict(d) for d in draft["claims"]]
+    active = [r for r in store.active_reports(listing_id)
+              if reports.effective_state(r["state"], r["expires_at"]) == "active"]
+    posts = {r["token"]: build_post(version, json.loads(r["payload"]),
+                                  str(request.url_for("report_page", token=r["token"]))) for r in active}
     return templates.TemplateResponse(request, "listing.html", {
         "draft": draft,
         "listing": row, "k": k, "version": version, "claims": claims, "photos": photos,
         "slots": [(s, SLOT_PROMPTS[s]) for s in required_slots(claims)] or [(Slot.FRONT, SLOT_PROMPTS[Slot.FRONT])],
         "check": check, "verdicts": verdicts, "stale": stale, "marks": marks,
-        "reports": store.active_reports(listing_id), "types": list(ClaimType),
+        "reports": active, "posts": posts, "types": list(ClaimType),
         "rows": range(CLAIM_ROWS)})
 
 
@@ -443,6 +448,23 @@ def report_page(request: Request, token: str):
         "image": f"{request.base_url}r/{token}/card.jpg"})
 
 
+def post_for_report(request: Request, row, view) -> dict:
+    version = store.db.execute("SELECT * FROM versions WHERE id=?", (row["version_id"],)).fetchone()
+    return build_post(version, view["payload"], str(request.url_for("report_page", token=row["token"])))
+
+
+@app.get("/r/{token}/listing", response_class=HTMLResponse)
+def buyer_listing(request: Request, token: str):
+    row, view = public_report(token)
+    active = view["state"] == "active"
+    return templates.TemplateResponse(request, "buyer_listing.html", {
+        **view, "token": token,
+        "post": post_for_report(request, row, view) if active else None,
+        "summary": reports.summary(view["payload"]) if active else None,
+        "image": f"{request.base_url}r/{token}/card.jpg"},
+        headers={"Cache-Control": "no-store"})
+
+
 @app.get("/r/{token}/card.jpg")
 def report_card(token: str):
     from .cards import render_card
@@ -473,6 +495,7 @@ def report_api(request: Request, token: str):
         return JSONResponse(out)
     return JSONResponse({**out, "issued_at": p["issued_at"], "expires_at": p["expires_at"],
                          "digest": view["digest"], "observer": p["observer"],
+                         "post": post_for_report(request, row, view),
                          "verdicts": [{"claim": c["text"], "by": c.get("by", ""), "status": c["verdict"]["status"],
                                        "detail": c["verdict"]["detail"],
                                        "request": c["verdict"]["request"]} for c in p["claims"]]})

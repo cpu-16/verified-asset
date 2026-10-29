@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}{{ version.title }} · Verified Asset{% endblock %}
 {% block style %}
+.marketplace-post { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.6; }
+.post-head { margin-top: 1.1rem; }
 .wizard [hidden] { display: none !important; }
 .wizard .seller { display: block; }
 .wizard .progress, .wizard > .chrome, .wizard > .notice, .wizard > .foot,
@@ -248,6 +250,15 @@
         <a href="/r/{{ r.token }}">{{ request.base_url }}r/{{ r.token }}</a>
         <button type="button" class="secondary" data-copy="{{ request.base_url }}r/{{ r.token }}">Copy link</button>
       </p>
+      {% set post = posts[r.token] %}
+      <h3 class="post-head">Post it on Marketplace</h3>
+      <p class="soft">Ready to paste, and it agrees with your photos. <a href="/r/{{ r.token }}/listing">Preview as a buyer</a></p>
+      {% if post.description_omitted %}<p class="soft">Your description was left out: it may repeat a claim the photos contradict.</p>{% endif %}
+      <details><summary>See the post</summary><div class="marketplace-post">{{ post.title }}{{ '\n\n' }}{{ post.description }}</div></details>
+      <div class="form-actions">
+        <button type="button" class="secondary" data-copy="{{ post.title }}{{ '\n\n' }}{{ post.description }}" data-copy-post>Copy post</button>
+        <a class="button secondary" href="https://www.facebook.com/marketplace/create/item" target="_blank" rel="noopener noreferrer">Open Marketplace</a>
+      </div>
       <form method="post" action="/r/{{ r.token }}/revoke?k={{ k }}"><button class="secondary" type="submit">Withdraw this report</button></form>
     </div>
     {% endfor %}
@@ -390,7 +401,7 @@
       }
     });
   });
-  if (navigator.share) document.querySelectorAll("[data-copy]").forEach(function (btn) {
+  if (navigator.share) document.querySelectorAll("[data-copy]:not([data-copy-post])").forEach(function (btn) {
     var share = document.createElement("button");  // on a phone: the native sheet with WhatsApp, Messenger
     share.type = "button"; share.className = "secondary"; share.textContent = "Share";
     share.addEventListener("click", function () {
