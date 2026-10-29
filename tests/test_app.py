@@ -513,3 +513,21 @@ def test_new_attributes_validate_subject_and_label_and_canonicalize_text(client)
     listing_id = response.headers['location'].split('?')[0].split('/')[-1]
     claims = main.store.claims_of(main.store.latest_version(listing_id))
     assert claims[0].text == 'Label reads: Samsung'
+
+
+def test_seller_step_markers_and_initial_state(sample):
+    main, c, listing_id, key = sample
+    page = c.get(f'/l/{listing_id}?k={key}').text
+    for step in ('code', 'photos', 'check', 'share'):
+        assert f'id="{step}" data-step="{step.capitalize()}"' in page
+    assert 'data-initial-step="check"' in page
+    assert 'id="step-back"' in page and 'id="step-next"' in page
+    film = c.post('/film', follow_redirects=False).headers['location']
+    page = c.get(film).text
+    assert 'id="film" data-step="Film"' in page
+    assert 'data-initial-step="code"' in page
+    film_id = film.split('/l/')[1].split('?')[0]
+    main.store.log(film_id, 'video_draft', version=1, title='Draft chair', description='White', claims=[])
+    page = c.get(film).text
+    assert 'id="draft" data-step="Draft"' in page
+    assert 'data-initial-step="draft"' in page

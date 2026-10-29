@@ -1,5 +1,45 @@
 {% extends "base.html" %}
 {% block title %}{{ version.title }} · Verified Asset{% endblock %}
+{% block style %}
+.wizard [hidden] { display: none !important; }
+.wizard .seller { display: block; }
+.wizard .progress, .wizard > .chrome, .wizard > .notice, .wizard > .foot,
+.wizard #main > .page-head { display: none; }
+.wizard #main { padding: 12px var(--gutter) calc(100px + env(safe-area-inset-bottom)); }
+.wizard #main > .alert { display: none; }
+.wizard-bar { margin-bottom: 10px; }
+.wizard-bar p { margin: 0; }
+.wizard-links, .page-controls { display: flex; gap: 6px; flex-wrap: wrap; }
+.wizard-links a { display: grid; place-items: center; min-width: 44px; min-height: 44px; border-bottom: 2px solid var(--line); text-decoration: none; }
+.wizard-links a[aria-current] { color: var(--ink); border-color: var(--violet-hi); }
+.wizard-info { font-size: .8rem; margin-bottom: 8px; }
+.wizard-info .alert { margin: 6px 0; }
+.wizard .card { padding: 14px; margin-bottom: 10px; }
+.wizard .seller-main > section > h2 { font-size: 1.15rem; }
+.wizard .seller-main > section > .soft { font-size: .85rem; margin: .3rem 0; }
+.wizard .tiles { display: block; margin-top: 8px; }
+.wizard .tile { border: 0; padding: 0; background: none; gap: 5px; }
+.wizard .shot { width: fit-content; max-width: 147px; margin: auto; }
+.wizard .tile .shot img { height: auto; }
+.wizard .tile img { height: 110px; object-fit: contain; aspect-ratio: auto; }
+.wizard .tile-empty { min-height: 90px; aspect-ratio: auto; }
+.wizard .tile .pick { margin: 0; }
+.wizard .page-controls { align-items: center; justify-content: space-between; margin: 8px 0; }
+.wizard .page-controls button { min-height: 44px; padding: 6px 10px; font-size: .8rem; }
+.wizard .page-controls span { font-size: .8rem; }
+.wizard .verdict { padding: 6px 0; }
+.wizard .verdict .why, .wizard .verdict .ask { font-size: .85rem; }
+.wizard .form-actions { margin-top: 8px; gap: 6px; }
+.wizard .form-actions p { font-size: .75rem; }
+.wizard .film-steps { font-size: .85rem; }
+.wizard .edit { margin-top: 10px; }
+.wizard-actions { position: fixed; z-index: 45; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; gap: 12px; padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line-2); }
+.wizard-actions button { flex: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .wizard [data-step]:not([hidden]) { animation: step-in .16s var(--ease-out); }
+}
+@keyframes step-in { from { transform: translateY(5px); opacity: .6; } }
+{% endblock %}
 {% block main %}
 {% if listing.sample %}<p class="alert sample" role="note"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-info"/></svg><span>Sample listing: recorded Muse Spark observations of test photos, not a real listing. Edit the claims and run a check; the photos can't be changed.</span></p>{% endif %}
 {% set d1 = photos %}
@@ -16,7 +56,10 @@
   <h1 class="display">{{ ("Check the draft" if draft else "Film your item") if filming else version.title }}</h1>
   {% if version.description %}<p class="lede">{{ version.description }}</p>{% endif %}
 </div>
-<div class="seller">
+<div class="seller" data-initial-step="{{ 'draft' if draft else ('code' if not photos else ('photos' if not d2 else 'check')) }}">
+<nav class="wizard-bar" aria-label="Step navigation" hidden><p id="step-status" aria-live="polite"></p><div class="wizard-links"></div></nav>
+<details class="wizard-info" hidden><summary>{{ 'Sample · ' if listing.sample else '' }}Listing details &amp; privacy</summary></details>
+<div class="wizard-actions" hidden><button type="button" class="secondary" id="step-back">Back</button><button type="button" id="step-next">Next</button></div>
 <nav class="card progress" aria-label="Listing steps">
   <ol>
     <li class="{% if d1 %}done{% else %}current{% endif %}">
@@ -39,7 +82,7 @@
 </nav>
 <div class="seller-main">
   {% if draft %}
-  <section class="card draft-card" id="draft">
+  <section class="card draft-card" id="draft" data-step="Draft">
     <h2>Check what Muse Spark drafted</h2>
     <p class="alert ai" role="note"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-spark"/></svg><span>Muse Spark drafted this from your video. It can be wrong, and it isn't a certification. Keep, change or clear each line, then save.</span></p>
     <div class="draft-shots">
@@ -56,7 +99,7 @@
   </section>
   {% endif %}
 
-  <section class="card code-card" id="code">
+  <section class="card code-card" id="code" data-step="Code">
     <div>
       <h2>Write this code on a piece of paper</h2>
       <p class="soft">Put it next to the item {{ "when you film it" if filming else "in the front photo" }}. It makes it hard to pass off old or downloaded photos as this listing's.</p>
@@ -65,7 +108,7 @@
   </section>
 
   {% if filming %}
-  <section class="card film-card" id="film">
+  <section class="card film-card" id="film" data-step="Film">
     <h2>{{ "Not right? Film it again" if draft else "Film your item" }}</h2>
     <ol class="film-steps">
       <li>Put the paper with the code next to the item.</li>
@@ -81,12 +124,12 @@
     <p class="soft film-note">The video stays on your phone: only 10 still frames are sent. Rather type it? <a href="/new">Write the listing yourself</a>.</p>
   </section>
   {% else %}
-  <section class="card" id="photos">
+  <section class="card" id="photos" data-step="Photos">
     <h2>Take the photos</h2>
     <p class="soft">We only ask for the photos your claims need.</p>
     <div class="tiles">
     {% for slot, prompt in slots %}
-      <form class="tile" method="post" action="/l/{{ listing.id }}/photo?k={{ k }}" enctype="multipart/form-data">
+      <form class="tile" data-present="{{ 'yes' if photos.get(slot) else 'no' }}" method="post" action="/l/{{ listing.id }}/photo?k={{ k }}" enctype="multipart/form-data">
         <input type="hidden" name="slot" value="{{ slot }}">
         {% if not listing.sample %}<label class="pick">{% endif %}
         {% if photos.get(slot) %}
@@ -124,7 +167,7 @@
     </div>
   </section>
 
-  <section class="card" id="check">
+  <section class="card" id="check" data-step="Check">
     <h2>Check your claims</h2>
     <p class="soft">The model describes your photos without seeing your claims. Fixed rules then compare.</p>
     {% if check and not check.ok %}
@@ -167,7 +210,7 @@
     </form>
   </section>
 
-  <section class="card" id="share">
+  <section class="card" id="share" data-step="Share">
     <h2>Share the report</h2>
     {% if check and check.ok and not stale %}
     <p class="soft">Paste the report link in your listing's description. Buyers see each claim and its result.</p>
@@ -202,6 +245,89 @@
 {% if not listing.sample and not claims %}<script src="/static/film.js?v={{ v }}" defer></script>{% endif %}{# blocks do not share set variables #}
 <script>
 (function () {
+  var seller = document.querySelector(".seller");
+  var panels = Array.from(seller.querySelectorAll("[data-step]"));
+  var bar = seller.querySelector(".wizard-bar"), links = bar.querySelector(".wizard-links");
+  var back = document.getElementById("step-back"), next = document.getElementById("step-next"), current = 0;
+  var info = seller.querySelector(".wizard-info");
+  document.querySelectorAll("#main > .alert, #main > .page-head").forEach(function (el) { info.appendChild(el); });
+  panels.forEach(function (panel, i) {
+    var a = document.createElement("a"); a.href = "#" + panel.id;
+    a.textContent = i + 1; a.setAttribute("aria-label", panel.dataset.step);
+    links.appendChild(a);
+  });
+  function show(id, focus) {
+    var index = panels.findIndex(function (p) { return p.id === id; });
+    if (index < 0) return;
+    current = index;
+    panels.forEach(function (panel, i) { panel.hidden = i !== index; });
+    Array.from(links.children).forEach(function (a, i) {
+      if (i === index) a.setAttribute("aria-current", "step"); else a.removeAttribute("aria-current");
+    });
+    document.getElementById("step-status").textContent = "Step " + (index + 1) + " of " + panels.length + " · " + panels[index].dataset.step;
+    back.disabled = index === 0; next.disabled = index === panels.length - 1;
+    var edit = seller.querySelector(".edit"); if (edit) edit.hidden = !["check", "share"].includes(id);
+    if (focus) { var heading = panels[index].querySelector("h2"); heading.tabIndex = -1; heading.focus({preventScroll: true}); }
+    window.scrollTo(0, 0);
+  }
+  function go(index) { location.hash = panels[index].id; }
+  back.addEventListener("click", function () { go(current - 1); });
+  next.addEventListener("click", function () { go(current + 1); });
+  window.addEventListener("hashchange", function () { show(location.hash.slice(1) || seller.dataset.initialStep, true); });
+  // Paginate photos and results without removing their forms or evidence from the DOM.
+  function paginate(selector, noun, initial) {
+    var list = seller.querySelector(selector); if (!list) return;
+    var rows = Array.from(list.children); if (!rows.length) return;
+    var pager = document.createElement("div"); pager.className = "page-controls";
+    var prev = document.createElement("button"), label = document.createElement("span"), more = document.createElement("button");
+    prev.type = more.type = "button"; prev.className = more.className = "secondary";
+    prev.textContent = "Previous"; more.textContent = "Next " + noun.toLowerCase();
+    label.setAttribute("aria-live", "polite");
+    pager.append(prev, label, more); list.before(pager);
+    var selected = Math.max(0, initial ? rows.findIndex(initial) : 0);
+    function render(focus) {
+      rows.forEach(function (row, i) { row.hidden = i !== selected; });
+      label.textContent = (selected + 1) + "/" + rows.length; label.setAttribute("aria-label", noun + " " + label.textContent);
+      prev.disabled = selected === 0; more.disabled = selected === rows.length - 1;
+      if (focus) { rows[selected].tabIndex = -1; rows[selected].focus({preventScroll: true}); }
+    }
+    prev.onclick = function () { selected--; render(true); };
+    more.onclick = function () { selected++; render(true); };
+    list.addEventListener("invalid", function (event) {
+      selected = rows.findIndex(function (row) { return row.contains(event.target); });
+      render(false);
+    }, true);
+    render(false);
+  }
+  var film = document.getElementById("film");
+  if (film) {
+    var explanation = document.createElement("details"), summary = document.createElement("summary");
+    summary.textContent = "How the video is used"; explanation.appendChild(summary);
+    var last = film.querySelector(".film-steps li:last-child"), paragraph = document.createElement("p");
+    paragraph.textContent = last.textContent; last.remove(); explanation.append(paragraph, film.querySelector(".film-note"));
+    film.appendChild(explanation);
+  }
+  var draft = document.getElementById("draft");
+  if (draft) {
+    var details = document.createElement("details"), summary = document.createElement("summary");
+    summary.textContent = "Draft source & photos"; details.appendChild(summary);
+    details.append(draft.querySelector(".alert"), draft.querySelector(".draft-shots"));
+    draft.querySelector("h2").textContent = "Check the draft";
+    draft.querySelector("h2").after(details);
+    details.appendChild(draft.querySelector(".form-actions p"));
+    var fields = document.createElement("div"); fields.className = "draft-fields";
+    var draftForm = draft.querySelector("form");
+    Array.from(draftForm.children).forEach(function (el) { if (!el.classList.contains("form-actions")) fields.appendChild(el); });
+    draftForm.prepend(fields);
+    paginate(".draft-fields", "Field");
+  }
+  paginate(".tiles", "Photo", function (row) { return row.dataset.present === "no"; });
+  paginate(".verdicts", "Result");
+  document.body.classList.add("wizard"); bar.hidden = info.hidden = seller.querySelector(".wizard-actions").hidden = false;
+  var requested = location.hash.slice(1);
+  var initial = panels.some(function (p) { return p.id === requested; }) ? requested : seller.dataset.initialStep;
+  if (!panels.some(function (p) { return p.id === initial; })) initial = panels[0].id;
+  show(initial, true);
   document.querySelectorAll("[data-copy]").forEach(function (btn) {
     btn.addEventListener("click", function () {
       var text = btn.getAttribute("data-copy") || "";

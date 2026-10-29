@@ -1,5 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Describe your item · Verified Asset{% endblock %}
+{% block style %}
+@media (max-width: 600px) {
+  #describe { padding-bottom: 90px; }
+  #describe > .form-actions { position: fixed; z-index: 45; bottom: 0; left: 0; right: 0; margin: 0; padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line-2); }
+  #describe > .form-actions button { width: 100%; }
+  #describe > .form-actions p { display: none; }
+}
+{% endblock %}
 {% block main %}
 <div class="narrow">
 <ol class="steps" aria-label="Steps">
