@@ -49,6 +49,14 @@
 .wizard .verdict .why, .wizard .verdict .ask { font-size: .85rem; }
 .wizard .form-actions { margin-top: 8px; gap: 6px; }
 .wizard .form-actions p { font-size: .75rem; }
+/* ponytail: Share fits one phone screen: link full width, buttons in rows, withdraw as a quiet link */
+.wizard #share .share-block { margin-top: 8px; padding-top: 10px; }
+.wizard #share .share a { flex-basis: 100%; padding: .5rem .7rem; font-size: .8rem; }
+.wizard #share .share-block button, .wizard #share .share-block .button { min-height: 44px; padding: .45rem .8rem; font-size: .875rem; }
+.wizard #share .share-block .soft { font-size: .85rem; margin: .3rem 0; }
+.wizard #share .post-head { margin: .8rem 0 0; font-size: 1rem; }
+.wizard #share .share-block details { margin: .3rem 0; font-size: .85rem; }
+.wizard #share .share-block form button { border: 0; background: none; padding: 0; color: var(--mute); text-decoration: underline; font-size: .85rem; }
 .wizard .film-steps { font-size: .85rem; }
 .wizard .edit { margin-top: 10px; }
 .wizard-actions { position: fixed; z-index: 45; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; gap: 12px; padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line-2); }
@@ -240,10 +248,10 @@
 
   <section class="card" id="share" data-step="Share">
     <h2>Share the report</h2>
-    {% if check and check.ok and not stale %}
+    {% if check and check.ok and not stale %}{% if not reports %}
     <p class="soft">Paste the report link in your listing's description. Buyers see each claim and its result.</p>
     <form method="post" action="/l/{{ listing.id }}/report?k={{ k }}"><div class="form-actions"><button type="submit">Create report link</button></div></form>
-    {% else %}<p class="soft">Available after a successful check.</p>{% endif %}
+    {% endif %}{% else %}<p class="soft">Available after a successful check.</p>{% endif %}
     {% for r in reports %}
     <div class="share-block">
       <p class="share">
