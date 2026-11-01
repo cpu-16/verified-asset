@@ -69,6 +69,10 @@
 .reshoot { flex-basis: 100%; }
 .reshoot .button, .reshoot button { width: 100%; min-height: 44px; padding: .45rem 1rem; font-size: .875rem; }
 .reshoot.uploading .button { opacity: .6; pointer-events: none; }
+@media (min-width: 40em) {  /* wide screens: a bigger photo so the marked area reads, a normal-width button */
+  .plan-thumb { flex-basis: 240px; } .plan-thumb img { width: 240px; }
+  .reshoot { padding-left: 250px; } .reshoot .button, .reshoot button { width: auto; }
+}
 .wizard .film-steps { font-size: .85rem; }
 .wizard .edit { margin-top: 10px; }
 .wizard-actions { position: fixed; z-index: 45; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; gap: 12px; padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line-2); }
