@@ -1,0 +1,22 @@
+{
+ "_meta": {
+  "model": "muse-spark-1.3",
+  "plan_version": 2,
+  "recorded_at": "2026-11-01T15:48:03+00:00",
+  "how": "SparkObserver.plan_shots on dining-front.jpg + dining-side.jpg with the sample's claims (no close-up yet)"
+ },
+ "6337bcfe98c3cfbdec615bca96307a657bdf2abe9ba36fd43815839a61225feb": {
+  "c3": {
+   "slot": "detail",
+   "instruction": "Take close-up from above of white table front corner and edge in bright light.",
+   "photo": "side",
+   "box": [
+    430,
+    360,
+    640,
+    500
+   ],
+   "by": "muse-spark-1.3"
+  }
+ }
+}

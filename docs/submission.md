@@ -20,7 +20,7 @@ Seller, launched in July 2026, and Meta AI in Marketplace draft listings from ph
 
 Sellers choose Furniture, Phones & tablets, Electronics & gaming, Clothing & shoes, or Kitchen & home, then tap fixed attribute suggestions or write their own claims. The catalogue requests the relevant front, side or detail photos. Sellers place the listing's code on paper in the front photo, run the check, review reasons and requests for missing evidence, and create a public report link. Buyers open that link without signing up and see the checked claims, photos, outcomes and current report validity. <!-- fuente: app/catalog.py; app/static/attributes.js; app/main.py; app/templates/listing.html; app/templates/report.html -->
 
-A free sample replays recorded Muse Spark observations of a dining set while running the rules and report lifecycle in the app. A seller's own photo check uses the configured observer, and report creation requires a successful check. <!-- fuente: app/main.py:create_sample,run_check,issue; app/observe.py:ReplayObserver -->
+A free sample replays recorded Muse Spark observations of a dining set while running the rules and report lifecycle in the app. It starts without the close-up, so the first check shows Spark's recorded request for it; adding the close-up and checking again shows the contradiction. A seller's own photo check uses the configured observer, and report creation requires a successful check. <!-- fuente: app/main.py:create_sample,run_check,issue; app/observe.py:ReplayObserver -->
 
 ## Use of Meta AI tooling
 

@@ -250,9 +250,19 @@ def create_sample():
     listing_id, key = store.create_listing(
         "White dining table with 4 chairs", "Barely used. Pick up only.", claims,
         sample=True, capture_code="6YA7")
-    for slot in Slot:
+    for slot in (Slot.FRONT, Slot.SIDE):  # no close-up yet: Spark's recorded plan asks for it
         store.add_photo(listing_id, str(slot), (SAMPLE / "photos" / f"dining-{slot}.jpg").read_bytes())
     return RedirectResponse(f"/l/{listing_id}?k={key}", status_code=303)
+
+
+@app.post("/l/{listing_id}/sample-detail")
+def sample_detail(listing_id: str, k: str):
+    """The sample's close-up, the one photo a sample can add: what Muse Spark's recorded plan asks for."""
+    row = seller_listing(listing_id, k)
+    if not row["sample"] or "detail" in store.current_photos(listing_id):
+        raise HTTPException(409, "Only a sample without its close-up can add it.")
+    store.add_photo(listing_id, "detail", (SAMPLE / "photos" / "dining-detail.jpg").read_bytes())
+    return RedirectResponse(f"/l/{listing_id}?k={k}#check", status_code=303)
 
 
 @app.get("/l/{listing_id}", response_class=HTMLResponse)

@@ -9,6 +9,7 @@ def sample(client):
     main, c = client
     path = c.post('/sample', follow_redirects=False).headers['location']
     listing, key = path.split('?k=')
+    c.post(f'{listing}/sample-detail?k={key}')  # the close-up Spark asks for
     c.post(f'{listing}/check?k={key}')
     report = c.post(f'{listing}/report?k={key}', follow_redirects=False).headers['location']
     return path, report.rsplit('/', 1)[-1]

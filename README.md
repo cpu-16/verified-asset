@@ -31,7 +31,7 @@ Local pickup is where second-hand deals go wrong: the "set of six" has four chai
 
 The seller chooses Furniture, Phones & tablets, Electronics & gaming, Clothing & shoes, or Kitchen & home, taps attribute suggestions or writes their claims, takes the few photos those claims need with the listing's code written on paper, and gets a report link to paste into the listing. Buyers open it without signing up.
 
-On the [live site](https://verified.adwentech.com), **Try the sample** runs the whole seller flow on the dining set below. It replays recorded Muse Spark observations of those photos, so it needs no photos of your own and makes no API call. Change "Set of 4 chairs" to 6 and check again to see a contradiction. The [demo guide](docs/demo-guide.md) walks through every screen with numbered screenshots.
+On the [live site](https://verified.adwentech.com), **Try the sample** runs the whole seller flow on the dining set below. It replays recorded Muse Spark observations of those photos, so it needs no photos of your own and makes no API call. It starts without the close-up: the first check can't tell whether there are scratches, Spark's recorded plan asks for the close-up and marks where, and adding it turns the claim into a contradiction. Change "Set of 4 chairs" to 6 and check again to see another. The [demo guide](docs/demo-guide.md) walks through every screen with numbered screenshots.
 
 <p align="center">
   <img src="docs/media/walkthrough.gif" alt="Walkthrough: the seller writes claims, takes guided photos with a code on paper, Muse Spark describes the photos without seeing the claims, fixed rules decide each claim, the buyer opens the report, and editing the listing voids it." width="88%">

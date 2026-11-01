@@ -146,6 +146,12 @@ def plan_prompt(needs: list[dict]) -> str:
     )
 
 
+def plan_key(photos: list[Photo], needs: list[dict]) -> str:
+    """Same photos (by slot and bytes) and same needs -> same plan; also how the sample's plan is replayed."""
+    shots = sorted([p.slot, hashlib.sha256(p.data).hexdigest()] for p in photos)
+    return hashlib.sha256(json.dumps([shots, needs]).encode()).hexdigest()
+
+
 def clean_plan(raw: dict, needs: list[dict], slots: set[str], model: str) -> dict[str, dict]:
     """Keep one well-formed shot per known need; a box only on a photo that exists, inside the grid."""
     known, plan = {n["id"] for n in needs}, {}
@@ -408,7 +414,7 @@ class SparkObserver:
         """Existing photos + neutral needs -> the exact photo to ask the seller for, per need.
         Advice only: the next check, blind as always, and the rules decide the claim."""
         photos = sorted(photos, key=lambda p: p.slot)
-        key = [[p.slot, hashlib.sha256(p.data).hexdigest()] for p in photos] + [needs, self.model, PLAN_VERSION]
+        key = [plan_key(photos, needs), self.model, PLAN_VERSION]
         client = self.client or httpx.Client()
 
         def call():  # only on a cache miss: preparing the photos is the slow part
@@ -463,6 +469,12 @@ class LocalObserver(SparkObserver):
 class ReplayObserver:
     def __init__(self, path: str | Path):
         self.recording = json.loads(Path(path).read_text())
+        plans = Path(path).with_name("shot-plans.json")
+        self.plans = json.loads(plans.read_text()) if plans.exists() else {}
+
+    def plan_shots(self, photos: list[Photo], needs: list[dict]) -> dict[str, dict]:
+        """The recorded Spark plan for these exact photos and needs; KeyError for anything else."""
+        return self.plans[plan_key(photos, needs)]
 
     @property
     def name(self) -> str:

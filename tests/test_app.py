@@ -305,6 +305,16 @@ def test_sample_end_to_end_without_key(sample):
     version = main.store.latest_version(listing_id)
     assert version["title"] == "White dining table with 4 chairs"
     assert version["description"] == "Barely used. Pick up only."
+    assert set(main.store.current_photos(listing_id)) == {"front", "side"}  # no close-up yet
+    page = c.get(f"/l/{listing_id}?k={key}").text
+    assert 'data-initial-step="check"' in page
+    c.post(f"/l/{listing_id}/check?k={key}")
+    page = c.get(f"/l/{listing_id}?k={key}").text  # Spark's recorded plan asks for the missing close-up
+    assert "Muse Spark asks for this photo" in page and "Add the sample close-up" in page
+    assert "corner and edge" in page and 'class="plan-box"' in page
+    r = c.post(f"/l/{listing_id}/sample-detail?k={key}", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].endswith("#check")
+    assert c.post(f"/l/{listing_id}/sample-detail?k={key}").status_code == 409  # once only
     photos = main.store.current_photos(listing_id)
     assert set(photos) == {"front", "side", "detail"}
     for slot, photo in photos.items():

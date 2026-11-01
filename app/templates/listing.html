@@ -67,7 +67,7 @@
 .plan-box { position: absolute; border: 2px dashed var(--maybe); border-radius: 4px; box-shadow: 0 0 0 999px rgba(0, 0, 0, .4); }
 .shot-ask > div:not(.plan-thumb) { flex: 1 1 0; min-width: 0; }
 .reshoot { flex-basis: 100%; }
-.reshoot .button { width: 100%; min-height: 44px; padding: .45rem 1rem; font-size: .875rem; }
+.reshoot .button, .reshoot button { width: 100%; min-height: 44px; padding: .45rem 1rem; font-size: .875rem; }
 .reshoot.uploading .button { opacity: .6; pointer-events: none; }
 .wizard .film-steps { font-size: .85rem; }
 .wizard .edit { margin-top: 10px; }
@@ -79,7 +79,7 @@
 @keyframes step-in { from { transform: translateY(5px); opacity: .6; } }
 {% endblock %}
 {% block main %}
-{% if listing.sample %}<p class="alert sample" role="note"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-info"/></svg><span>Sample listing: recorded Muse Spark observations of test photos, not a real listing. Edit the claims and run a check; the photos can't be changed.</span></p>{% endif %}
+{% if listing.sample %}<p class="alert sample" role="note"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-info"/></svg><span>Sample listing: recorded Muse Spark observations of test photos, not a real listing. Edit the claims and run a check. The photos are fixed; the only one you can add is the close-up Muse Spark asks for.</span></p>{% endif %}
 {% set d1 = photos %}
 {% set d2 = photos|length >= slots|length %}
 {% set d3 = check and check.ok and not stale %}
@@ -94,7 +94,7 @@
   <h1 class="display">{{ ("Check the draft" if draft else "Film your item") if filming else version.title }}</h1>
   {% if version.description %}<p class="lede">{{ version.description }}</p>{% endif %}
 </div>
-<div class="seller" data-check-ready="{{ 'yes' if d3 else 'no' }}" data-photos-ready="{{ 'yes' if d2 else 'no' }}" data-initial-step="{{ 'draft' if draft else ('code' if not photos else ('photos' if not d2 else 'check')) }}">
+<div class="seller" data-check-ready="{{ 'yes' if d3 else 'no' }}" data-photos-ready="{{ 'yes' if d2 else 'no' }}" data-initial-step="{{ 'draft' if draft else ('code' if not photos else ('photos' if not d2 and not listing.sample else 'check')) }}">
 <nav class="wizard-bar" aria-label="Step navigation" hidden><p id="step-status" aria-live="polite"></p><div class="wizard-links"></div></nav>
 <details class="wizard-info" hidden><summary>{{ 'Sample · ' if listing.sample else '' }}Listing details &amp; privacy</summary></details>
 <div class="wizard-actions" hidden><button type="button" class="secondary" id="step-back">Back</button><button type="button" id="step-next">Next</button></div>
@@ -257,6 +257,7 @@
               <input type="hidden" name="slot" value="{{ s.slot }}">
               <label class="button secondary">Take {{ "this close-up" if s.slot == "detail" else "this " ~ s.slot ~ " photo" }}<input class="sr" type="file" name="file" accept="image/*" capture="environment" required></label>
             </form>{% endif %}
+          {% if listing.sample and s.slot == "detail" and not photos.get("detail") %}<form class="reshoot" method="post" action="/l/{{ listing.id }}/sample-detail?k={{ k }}"><button class="secondary" type="submit">Add the sample close-up</button></form>{% endif %}
         </div>
         {% endif %}
       </li>
