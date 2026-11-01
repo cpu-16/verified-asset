@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/media/hero.jpg" alt="Verified Asset on a phone and a laptop. The phone shows the evidence report for a white dining table with four chairs: 1 contradicted, 2 supported, 1 inconclusive. The laptop shows the home page, with the pipeline drawn as a stack of glass plates: the seller's claims, the photo with the code on paper, Muse Spark's blind pass, SAM 3.1's box and the verdicts." width="100%">
+  <img src="docs/media/hero.jpg" alt="Verified Asset on a phone and a laptop. The phone shows the seller's Check step for a white dining table with four chairs: 2 supported, 0 contradicted, 2 can't tell, and Muse Spark asking for a close-up of the table's front corner and edge, with that area marked on the seller's own photo. The laptop shows the home page, with the pipeline drawn as a stack of glass plates: the seller's claims, the photo with the code on paper, Muse Spark's blind pass, SAM 3.1's box and the verdicts." width="100%">
 </p>
 
 <h1 align="center">Verified Asset</h1>
@@ -34,7 +34,7 @@ The seller chooses Furniture, Phones & tablets, Electronics & gaming, Clothing &
 On the [live site](https://verified.adwentech.com), **Try the sample** runs the whole seller flow on the dining set below. It replays recorded Muse Spark observations of those photos, so it needs no photos of your own and makes no API call. It starts without the close-up: the first check can't tell whether there are scratches, Spark's recorded plan asks for the close-up and marks where, and adding it turns the claim into a contradiction. Change "Set of 4 chairs" to 6 and check again to see another. The [demo guide](docs/demo-guide.md) walks through every screen with numbered screenshots.
 
 <p align="center">
-  <img src="docs/media/walkthrough.gif" alt="Walkthrough: the seller writes claims, takes guided photos with a code on paper, Muse Spark describes the photos without seeing the claims, fixed rules decide each claim, the buyer opens the report, and editing the listing voids it." width="88%">
+  <img src="docs/media/walkthrough.gif" alt="Walkthrough of the sample: the home page; guided photos with the code on paper and the close-up missing; Muse Spark describing the photos without seeing the claims; fixed rules deciding while Muse Spark asks for the exact photo missing; the close-up turning No scratches or stains into contradicted; the buyer's report; and an edit to the listing voiding the old report." width="88%">
 </p>
 
 ## How it works
