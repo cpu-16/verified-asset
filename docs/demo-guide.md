@@ -8,58 +8,71 @@ The category picker offers Furniture, Phones & tablets, Electronics & gaming, Cl
 
 There are two ways in:
 
-- **Try the sample** (steps 1 to 9). A dining set we photographed ourselves, with Muse Spark's observations recorded from a real run. It shows the whole flow, costs nothing and calls no model.
-- **Start a report** (step 10). Your own item and photos. Live checks call Muse Spark and SAM 3.1, so they only run once the model key is set on the server; until then a live check stops with "no model is configured" and records nothing.
+- **Try the sample** (steps 1 to 12). A dining set we photographed ourselves, with Muse Spark's observations recorded from a real run. It shows the whole flow, costs nothing and calls no model.
+- **Start a report** (step 13). Your own item and photos. Live checks call Muse Spark and SAM 3.1, so they only run once the model key is set on the server; until then a live check stops with "no model is configured" and records nothing.
+
+The seller's page is four steps: **Code, Photos, Check, Share**. The tabs at the top jump between them, and **Back** and **Next** at the bottom of the screen walk through them in order.
 
 ## 1. The home page
 
 ![Home page](guide/01-home.webp)
 
-1. **Try the sample** opens a ready-made listing with photos, so you can run the check right away.
-2. **Start a report** begins your own listing (step 10).
+1. **Try the sample** opens a ready-made listing, so you can run the check right away.
+2. **Start a report** begins your own listing (step 13).
 3. **How we measured** jumps to the evaluation: on 12 labelled furniture cases, blind observation plus fixed rules got 12 right with no false reassurance; the model judging the claim directly got 9, and twice said "supported" for a photo too blurry or too dark to tell.
 
-## 2. The seller's page
+## 2. Code
 
-![The sample listing](guide/02-listing.webp)
+![The listing's code](guide/02-code.webp)
 
-1. The violet note marks this as the sample: recorded observations of test photos, not a real listing. You can edit the claims and check again; the photos stay fixed.
-2. The progress rail: code on paper, photos, check, share. Each step gets a tick when it's done.
+1. The four steps. The sample opens on **Check**; this guide starts from the first one.
+2. **Listing details & privacy** holds the sample note (recorded observations of test photos, not a real listing) and, on your own listing, the reminder that this page's link is private: anyone with it can edit the listing.
 3. The listing's capture code. The seller writes it on paper and puts it next to the item in the front photo. It is a signal against reused or downloaded photos, not proof of ownership.
-4. The photos. We only ask for the ones the claims need: a count needs front and side, a damage claim adds a close-up. On your own listing, tapping a box opens the camera and the photo uploads as soon as it's chosen.
 
-This page's link is private: anyone with it can edit the listing, which is why the yellow note asks the seller to keep it.
+## 3. Photos
 
-## 3. Checking the claims
+![The photos step](guide/03-photos.webp)
 
-![The check in progress](guide/03-checking.webp)
+1. We only ask for the photos the claims need: a count needs front and side, a damage claim adds a close-up. On your own listing, tapping a box opens the camera and the photo uploads as soon as it's chosen.
+2. The sample starts **without its close-up** on purpose: step 5 shows what happens when a claim needs a photo that isn't there.
+
+## 4. Checking the claims
+
+![The check in progress](guide/04-checking.webp)
 
 1. While the check runs, the page shows what is happening, photo by photo. The model is only told what to count, never the claims.
 2. The button stays disabled until the result is back. The sample replays its recording at once; a live check with Muse Spark and SAM 3.1 took about 6.5 seconds and cost about 3.5 cents.
 
-## 4. The result
+## 5. The photo Muse Spark asks for
 
-![Verdicts after the check](guide/04-verdicts.webp)
+![First result, with the photo Muse Spark asks for](guide/05-ask.webp)
 
-1. The close-up. Muse Spark reported peeling on the tabletop edge here.
-2. One verdict per claim, with the reason in plain words:
-   - "Set of 4 chairs": **supported**, the front photo shows all 4.
-   - "White finish": **supported**.
-   - "No scratches or stains": **contradicted**, peeling seen in the close-up.
-   - "Solid oak, not veneer": **inconclusive**, photos can't show this. Claims like this stay on the report, marked as not checkable.
-3. Where the result came from: here, the replayed recording. On a live check this line names the models and the time taken.
+1. The first result: 2 supported, 0 contradicted, 2 can't tell. "No scratches or stains" can't be settled without a close-up.
+2. For a claim the photos can't settle, Muse Spark looks at the photos the seller already has and marks where the missing photo should be taken. It is told only the task ("inspect the item's surfaces, edges and corners for damage"), never the seller's claim or its value.
+3. The exact photo to take, in one sentence. When one photo would settle several claims, it asks for it once.
+4. **Add the sample close-up** stands in for the camera. On your own listing the button reads **Take this close-up** (or the photo it needs) and opens the camera, then brings you back to Check.
 
-## 5. Sharing the report
+The request is shown only to the seller. It never appears on the report and never changes a verdict: only the next check does. The sample shows a recorded request; on your own listing, asking is one more Muse Spark call, made only when a claim can't be told.
 
-![Share block](guide/05-share.webp)
+## 6. The result
 
-1. **Create report link** gives a public link the seller pastes into the listing's description.
-2. **Copy link** puts it on the clipboard.
-3. **Withdraw this report** turns the link off for good. Reports also expire after 30 days.
+![Verdicts after adding the close-up](guide/06-verdicts.webp)
 
-## 6. What the buyer sees
+1. Press **Check again**: "No scratches or stains" is now **contradicted**. Tap a claim to see why: peeling on the tabletop edge, seen in the close-up. "Set of 4 chairs" and "White finish" stay **supported**.
+2. "Solid oak, not veneer" stays **can't tell**: photos can't show this. Claims like this stay on the report, marked as not checkable.
 
-![The public report](guide/06-report.webp)
+## 7. Sharing the report
+
+![Share step](guide/07-share.webp)
+
+1. **Create report link** gives a public link the seller pastes into the listing's description. **Copy link** puts it on the clipboard; on a phone, **Share** opens the phone's share sheet (WhatsApp, Messenger).
+2. **Post it on Marketplace**: a title and description ready to paste, with the photo-checked claims and the link. The seller's own description is left out when it may repeat a claim the photos contradict. **See the post** shows it, **Copy post** copies it and **Open Marketplace** opens the listing form.
+3. **Preview as a buyer** shows the report inside a mock listing (step 9).
+4. **Withdraw this report** turns the link off for good. Reports also expire after 30 days.
+
+## 8. What the buyer sees
+
+![The public report](guide/08-report.webp)
 
 1. Validity and the capture code: the date the report expires, and whether the code on paper was readable in a usable photo.
 2. The counts: contradicted, supported, inconclusive.
@@ -69,61 +82,66 @@ This page's link is private: anyone with it can edit the listing, which is why t
 
 The buyer never sees SAM's boxes or the seller's private page.
 
-## 7. Changing a claim
+## 9. The report inside a listing
 
-![Editing the listing](guide/07-edit.webp)
+![The report on a mock listing](guide/09-buyer.webp)
 
-1. Back on the seller's page, open **Edit the listing** and change "Set of 4 chairs" to "Set of 6 chairs", with 6 as the value. The sentence has to name the same number as the value, or the form refuses it.
+1. A mock Marketplace-style listing, labelled **DEMO** and not affiliated with Meta.
+2. The evidence card a buyer would see under the photos: the counts, and a link to the full report.
+
+## 10. Changing a claim
+
+![Editing the listing](guide/10-edit.webp)
+
+1. Back on the seller's page, open **Edit the listing**, tap "Set of 4 chairs" and change it to "Set of 6 chairs", with 6 as the number. The sentence has to name the same number as the value, or the form refuses it.
 2. **Save version 2.** Saving makes a new version, and every report shared for the old version stops being valid.
 
-## 8. Checking again
+## 11. Checking again
 
-![Verdicts after the edit](guide/08-recheck.webp)
+![Verdicts after the edit](guide/11-recheck.webp)
 
-1. Run the check again: "Set of 6 chairs" is now **contradicted**, because the front photo shows 4 chairs, all in view. A count is only decided from a photo where every piece is fully in view, and counts are never added across photos (the same chair shows up in several). Otherwise the claim stays inconclusive and the page asks for a better photo.
+1. Run the check again: "Set of 6 chairs" is now **contradicted**, because the front photo shows 4 chairs, all in view. A count is only decided from a photo where every piece is fully in view, and counts are never added across photos (the same chair shows up in several). Otherwise the claim stays can't tell and Muse Spark asks for a better photo.
 
-## 9. The old link after the edit
+## 12. The old link after the edit
 
-![Report no longer valid](guide/09-void.webp)
+![Report no longer valid](guide/12-void.webp)
 
-1. The report from step 5 now says **No longer valid**: the seller changed the listing after it was issued, so it no longer vouches for it. The same page appears, with its own wording, for a withdrawn or expired report.
+1. The report from step 7 now says **No longer valid**: the seller changed the listing after it was issued, so it no longer vouches for it. The same page appears, with its own wording, for a withdrawn or expired report.
 
-## 10. Starting your own report
+## 13. Starting your own report
 
-![Describe your item](guide/10-new.webp)
+![Describe your item](guide/13-new.webp)
 
-1. The title buyers will see.
-2. Choose a category and tap attributes. Claim types include number of pieces, color, no visible damage, no visible damage on a part, label text, or other. Label text does not certify brand authenticity.
-3. The claim as you'd write it to a buyer.
-4. For a count, what to count ("chair", "shelf").
-5. The value to check: the number, or the color.
-6. **Suggest claims** fills the rows for you. Write or dictate the description the way you'd tell a buyer, press it, and Muse Spark turns your words into rows marked *Suggested*. It reads only the description, never the photos. Change or clear any row; nothing is saved until you continue. It takes about 6 seconds and needs the model key on the server.
+1. **Film it instead** skips the typing: see step 14.
+2. The title buyers will see.
+3. **Suggest claims** fills the claims for you. Write or dictate the description the way you'd tell a buyer, press it, and Muse Spark turns your words into claims marked *Suggested*. It reads only the description, never the photos. It takes about 6 seconds and needs the model key on the server.
+4. The category: Furniture, Phones & tablets, Electronics & gaming, Clothing & shoes, or Kitchen & home.
+5. Tap the attributes buyers ask about. **Write another claim** adds one in your own words.
+6. Each claim, with the value to check where it needs one: the number, the colour or the label text. Tap a claim to reword it; × removes it. Label text does not certify brand authenticity.
 
-7. **Film it instead** skips the typing: see step 11.
+Then **Continue to photos** and follow steps 2 to 7 with your own item.
 
-Then **Continue to photos** and follow steps 2 to 6 with your own item.
+## 14. Filming instead
 
-## 11. Filming instead
+![The draft Muse Spark made from a video](guide/14-film.webp)
 
-![The draft Muse Spark made from a video](guide/11-film.webp)
-
-Write the listing's code on paper, press **Film the item** and film 10 to 30 seconds: the front with the paper in view, one side, then close on the top. The phone keeps the video and sends only 10 still frames. About 15 seconds later the draft appears.
+Write the listing's code on paper, press **Film it instead** and film 10 to 30 seconds: the front with the paper in view, one side, then close on the top. The phone keeps the video and sends only 10 still frames. About 15 seconds later the draft appears.
 
 1. The front, side and close-up photos Muse Spark picked from the frames. They become the listing's photos.
 2. The draft is marked as Muse Spark's: it can be wrong, and it isn't a certification.
 3. Muse Spark drafts the title and description, plus only counts and colours, each marked *From your video*. It never drafts "no visible damage": damage it sees goes in the description, and that claim stays the seller's to make. Editing a row makes it the seller's.
-4. **Save and check** saves the listing and runs the same blind check as step 3. On the report, each claim it drafted says *Drafted by Muse Spark from the seller's video; the seller kept this wording*.
+4. **Save and check** saves the listing and runs the same blind check as step 4. On the report, each claim it drafted says *Drafted by Muse Spark from the seller's video; the seller kept this wording*.
 
 It needs the model key on the server, and each phone can film 10 items a day.
 
 ## A two-minute run for testers
 
-1. Open https://verified.adwentech.com and press **Try the sample**.
-2. Press **Check my claims**. Expect 2 supported, 1 contradicted, 1 inconclusive.
-3. Press **Create report link** and open the link in a private window: that is the buyer's view.
-4. Back on the seller's page, change the chairs to 6 and save. Check again: the count is now contradicted.
-5. Reload the buyer's link: it now says **No longer valid**.
-6. Try counting something else in the sample, such as "shelf". The sample only has recorded observations for chairs, so the check stops and says so.
+1. Open https://verified.adwentech.com and press **Try the sample**. It opens on the Check step.
+2. Press **Check my claims**. Expect 2 supported, 0 contradicted, 2 can't tell, and Muse Spark asking for a close-up of the tabletop edge.
+3. Press **Add the sample close-up**, then **Check again**. Expect 2 supported, 1 contradicted, 1 can't tell.
+4. Press **Next**, then **Create report link**, and open the link in a private window: that is the buyer's view. **Preview as a buyer** shows it inside a mock listing.
+5. Back on the seller's page, change the chairs to 6 and save. Check again: the count is now contradicted.
+6. Reload the buyer's link: it now says **No longer valid**.
 
 ## What is real and what is recorded
 
