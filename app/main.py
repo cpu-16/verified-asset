@@ -24,7 +24,7 @@ from pydantic import BaseModel
 
 from . import reports
 from .marketplace import build_post
-from .adjudicate import COLOR_FAMILIES, adjudicate, capture_code_seen, color_family, scan
+from .adjudicate import COLOR_FAMILIES, adjudicate, capture_code_seen, color_family, scan, shot_needs
 from .catalog import CATEGORIES, SLOT_PROMPTS, SUBJECT, Claim, ClaimType, Slot, count_subjects, required_slots
 from .observation import PhotoObservation
 from .store import Store
@@ -307,7 +307,7 @@ def photo(listing_id: str, photo_id: str, k: str):
 
 
 @app.post("/l/{listing_id}/photo")
-async def upload(listing_id: str, k: str, slot: Slot = Form(...), file: UploadFile = File(...)):
+async def upload(listing_id: str, k: str, slot: Slot = Form(...), file: UploadFile = File(...), back: str = ""):
     row = seller_listing(listing_id, k)
     if row["sample"]:
         raise HTTPException(409, "The sample replays recorded observations of these photos, so they can't be changed. "
@@ -321,7 +321,7 @@ async def upload(listing_id: str, k: str, slot: Slot = Form(...), file: UploadFi
     except Exception:
         raise HTTPException(415, "That file is not a readable image.")
     store.add_photo(listing_id, str(slot), data)
-    return RedirectResponse(f"/l/{listing_id}?k={k}#photos", status_code=303)
+    return RedirectResponse(f"/l/{listing_id}?k={k}#{'check' if back == 'check' else 'photos'}", status_code=303)
 
 
 @app.post("/l/{listing_id}/check")
@@ -364,13 +364,29 @@ def check_listing(listing_id: str, k: str):
                 result = CheckResult(observer.name, False, error=str(exc))
             if result.ok:
                 observations = [o.to_dict() for o in obs]
-                verdicts = [v.to_dict() for v in adjudicate(claims, obs)]
+                decided = adjudicate(claims, obs)
+                verdicts = [v.to_dict() for v in decided]
+                attach_shots(listing_id, observer, photos, shot_needs(claims, decided), verdicts)
     latency = result.latency_ms or int((time.monotonic() - started) * 1000)
     check_id = store.save_check(version["id"], {s: p["id"] for s, p in current.items()}, observer.name,
                      result.ok, result.error, observations, verdicts, latency)
     store.log(listing_id, "check_run", observer=observer.name, ok=result.ok, error=result.error,
               version=version["version"])
     return check_id
+
+
+def attach_shots(listing_id: str, observer, photos, needs: list[dict], verdicts: list[dict]) -> None:
+    """Muse Spark plans the exact photo each `can't tell` needs. Seller-only advice: it never changes a verdict."""
+    if not needs or not hasattr(observer, "plan_shots"):  # the replayed sample has no planner
+        return
+    try:
+        plan = observer.plan_shots(photos, needs)
+    except Exception as exc:  # ponytail: optional advice; the rule's generic request still shows
+        store.log(listing_id, "shot_plan_failed", error=f"{type(exc).__name__}: {exc}")
+        return
+    for v in verdicts:
+        if v["claim_id"] in plan:
+            v["shot"] = plan[v["claim_id"]]
 
 
 @app.post("/l/{listing_id}/report")

@@ -220,6 +220,39 @@ def adjudicate(claims: list[Claim], obs: list[PhotoObservation]) -> list[Verdict
     return verdicts
 
 
+PROBLEMS = {  # rule reason -> what went wrong with the evidence, in words a photo planner can act on
+    "MISSING_VIEW": "the {slot} photo is missing",
+    "UNUSABLE_VIEW": "the {slot} photo is too blurry, dark or cut off",
+    "PARTLY_HIDDEN": "some pieces may be out of view or hidden",
+    "OBSERVERS_DISAGREE": "two observers counted a different number of pieces",
+    "PART_NOT_SEEN": "the part is not fully and clearly in view",
+    "LABEL_NOT_READ": "the label text is not legible",
+}
+
+
+def shot_needs(claims: list[Claim], verdicts: list[Verdict]) -> list[dict]:
+    """Neutral tasks for the photo planner, one per photo-checkable `can't tell`.
+
+    Built from claim types and subjects only: never the seller's sentence, number,
+    colour or label text, so the planner can't steer toward a reassuring photo.
+    """
+    tasks = {ClaimType.COLOR: "see the main item's colour in good, even light",
+             ClaimType.PIECE_COUNT: "see every {subject} fully, in one photo",
+             ClaimType.NO_VISIBLE_DAMAGE: "inspect the item's surfaces, edges and corners for damage",
+             ClaimType.PART_NO_DAMAGE: "see the entire {subject}, including its edges, for damage",
+             ClaimType.LABEL_TEXT: "read the text on the item's label"}
+    by_id = {c.id: c for c in claims}
+    needs = []
+    for v in verdicts:
+        claim = by_id.get(v.claim_id)
+        if v.status != Status.INCONCLUSIVE or claim is None or claim.type not in tasks or v.reason not in PROBLEMS:
+            continue
+        slot = m[1] if (m := re.match(r"Retake the (\w+) photo", v.request)) else "required"  # see _inconclusive
+        needs.append({"id": claim.id, "task": tasks[claim.type].format(subject=claim.subject or "piece"),
+                      "problem": PROBLEMS[v.reason].format(slot=slot)})
+    return needs
+
+
 def scan(claims: list[Claim], obs: list[PhotoObservation]) -> list[Verdict]:
     """Buyer-side check of a listing's own photos: no guided views, no capture code.
 

@@ -2,6 +2,7 @@
 import dataclasses
 import importlib
 import io
+import json
 import re
 
 import pytest
@@ -536,3 +537,55 @@ def test_seller_step_markers_and_initial_state(sample):
     page = c.get(film).text
     assert 'id="draft" data-step="Draft"' in page
     assert 'data-initial-step="draft"' in page
+
+
+class PlanningObserver(FakeObserver):
+    """Counts 3 chairs not all in view, so the count can't be told, and plans the missing shot."""
+
+    def __init__(self, fail=False):
+        super().__init__(chairs=3)
+        self.fail, self.needs = fail, []
+
+    def observe(self, photos, count_nouns):
+        result = super().observe(photos, count_nouns)
+        result.observations = [dataclasses.replace(o, counts=(Count("chair", 3, False),)) for o in result.observations]
+        return result
+
+    def plan_shots(self, photos, needs):
+        self.needs.append(needs)
+        if self.fail:
+            raise RuntimeError("model down")
+        return {n["id"]: {"slot": "front", "instruction": "Step back until all the chairs fit in the frame.",
+                          "photo": "front", "box": [100, 300, 900, 950], "by": "fake"} for n in needs}
+
+
+def test_cant_tell_gets_a_planned_shot_for_the_seller_only(client):
+    main, c = client
+    main.app.state.observer = spark = PlanningObserver()
+    listing_id, key = make_listing(c)
+    c.post(f"/l/{listing_id}/check?k={key}")
+    assert [n["task"] for n in spark.needs[0]] == ["see every chair fully, in one photo"]
+    page = c.get(f"/l/{listing_id}?k={key}").text
+    assert "Muse Spark asks for this photo" in page and "Step back until all the chairs fit" in page
+    assert "left:10.0%;top:30.0%;width:80.0%;height:65.0%" in page
+    assert f'action="/l/{listing_id}/photo?k={key}&back=check"' in page
+
+    r = c.post(f"/l/{listing_id}/report?k={key}", follow_redirects=False)
+    token = r.headers["location"].rsplit("/", 1)[1]
+    assert "shot" not in json.dumps(c.get(f"/api/r/{token}").json())  # advice stays with the seller
+    assert "Step back" not in c.get(f"/r/{token}").text
+
+    r = c.post(f"/l/{listing_id}/photo?k={key}&back=check", data={"slot": "front"},
+               files={"file": ("p.jpg", jpeg(), "image/jpeg")}, follow_redirects=False)
+    assert r.headers["location"].endswith("#check")
+    assert "Muse Spark asks for this photo" not in c.get(f"/l/{listing_id}?k={key}").text  # stale: check again
+
+
+def test_a_failed_plan_never_breaks_the_check(client):
+    main, c = client
+    main.app.state.observer = PlanningObserver(fail=True)
+    listing_id, key = make_listing(c)
+    c.post(f"/l/{listing_id}/check?k={key}")
+    page = c.get(f"/l/{listing_id}?k={key}").text
+    assert "can&#39;t tell" in page.lower() or "Can't tell" in page
+    assert "Muse Spark asks for this photo" not in page and "To settle it:" in page

@@ -57,6 +57,18 @@
 .wizard #share .post-head { margin: .8rem 0 0; font-size: 1rem; }
 .wizard #share .share-block details { margin: .3rem 0; font-size: .85rem; }
 .wizard #share .share-block form button { border: 0; background: none; padding: 0; color: var(--mute); text-decoration: underline; font-size: .85rem; }
+/* Muse Spark's shot plan: visible without opening the row, with the area marked on the seller's own photo */
+.shot-ask { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; margin: .2rem 0 .6rem; padding: 10px; border: 1px dashed var(--maybe-line); border-radius: 12px; background: var(--maybe-bg); }
+.shot-ask p { margin: 0; }
+.shot-same { margin: 0 0 .5rem; font-size: .8rem; }
+.shot-ask .shot-text { margin: .25rem 0 0; color: var(--ink); font-size: .9rem; }
+.plan-thumb { position: relative; flex: 0 0 112px; overflow: hidden; border-radius: 8px; }
+.plan-thumb img { display: block; width: 112px; height: auto; }
+.plan-box { position: absolute; border: 2px dashed var(--maybe); border-radius: 4px; box-shadow: 0 0 0 999px rgba(0, 0, 0, .4); }
+.shot-ask > div:not(.plan-thumb) { flex: 1 1 0; min-width: 0; }
+.reshoot { flex-basis: 100%; }
+.reshoot .button { width: 100%; min-height: 44px; padding: .45rem 1rem; font-size: .875rem; }
+.reshoot.uploading .button { opacity: .6; pointer-events: none; }
 .wizard .film-steps { font-size: .85rem; }
 .wizard .edit { margin-top: 10px; }
 .wizard-actions { position: fixed; z-index: 45; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; gap: 12px; padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line-2); }
@@ -215,7 +227,7 @@
     {% if verdicts %}
     <p class="verdict-summary">{{ verdicts.values()|selectattr('status', 'equalto', 'supported')|list|length }} supported · {{ verdicts.values()|selectattr('status', 'equalto', 'contradicted')|list|length }} contradicted · {{ verdicts.values()|selectattr('status', 'equalto', 'inconclusive')|list|length }} can't tell</p>
     {% endif %}
-    <ul class="verdicts">
+    <ul class="verdicts">{% set planned = namespace(slots=[]) %}
     {% for c in claims %}{% set v = verdicts.get(c.id) %}
       <li class="verdict {{ v.status if v else 'unchecked' }}">
         <details><summary>
@@ -229,6 +241,24 @@
           {% if v %}<p class="why">{{ v.detail }}</p>{% if v.request %}<p class="ask"><span class="ask-label">To settle it:</span> {{ v.request }}.</p>{% endif %}{% endif %}
         </div>
         </details>
+        {% if v and v.shot and not stale and v.shot.slot in planned.slots %}
+        <p class="by shot-same"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-spark"/></svg>The same {{ "close-up" if v.shot.slot == "detail" else v.shot.slot }} photo settles this too.</p>
+        {% elif v and v.shot and not stale %}{% set s = v.shot %}{% set planned.slots = planned.slots + [s.slot] %}
+        <div class="shot-ask">
+          {% if s.box and photos.get(s.photo) %}
+          <div class="plan-thumb"><img src="/l/{{ listing.id }}/photo/{{ photos[s.photo].id }}?k={{ k }}" alt="Your {{ s.photo }} photo, with the area to photograph marked">
+            <span class="plan-box" style="left:{{ s.box[0] / 10 }}%;top:{{ s.box[1] / 10 }}%;width:{{ (s.box[2] - s.box[0]) / 10 }}%;height:{{ (s.box[3] - s.box[1]) / 10 }}%"></span></div>
+          {% endif %}
+          <div>
+            <p class="by"><svg class="ico" aria-hidden="true" viewBox="0 0 20 20"><use href="#i-spark"/></svg>Muse Spark asks for this photo</p>
+            <p class="shot-text">{{ s.instruction }}</p>
+          </div>
+          {% if not listing.sample %}<form class="reshoot" method="post" action="/l/{{ listing.id }}/photo?k={{ k }}&back=check" enctype="multipart/form-data">
+              <input type="hidden" name="slot" value="{{ s.slot }}">
+              <label class="button secondary">Take {{ "this close-up" if s.slot == "detail" else "this " ~ s.slot ~ " photo" }}<input class="sr" type="file" name="file" accept="image/*" capture="environment" required></label>
+            </form>{% endif %}
+        </div>
+        {% endif %}
       </li>
     {% endfor %}
     </ul>
@@ -430,6 +460,11 @@
     input.addEventListener("change", upload);
     tile.addEventListener("drop", function (e) {
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) { input.files = e.dataTransfer.files; upload(); }
+    });
+  });
+  document.querySelectorAll(".reshoot input[type=file]").forEach(function (input) {
+    input.addEventListener("change", function () {
+      if (input.files && input.files.length) { input.form.classList.add("uploading"); input.form.requestSubmit(); }
     });
   });
   var draftForm = document.getElementById("draft-form");
