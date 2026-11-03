@@ -100,6 +100,43 @@ test("recognizes Marketplace item ids and report payloads", () => {
   assert.equal(VA.isReportPageUrl(BASE, "https://evil.example/r/" + TOKEN, TOKEN), false);
 });
 
+test("demo mock page is labelled, unindexed, and uses the fixture report schema", () => {
+  const html = readFileSync(resolve(root, "test/demo-mock.html"), "utf8");
+  assert.ok(html.includes(
+    "MOCK PAGE for the Meta Global AI Developer Hackathon demo. Not Facebook or Marketplace. " +
+    "Not affiliated with or endorsed by Meta. No real listing, seller or person is shown."
+  ));
+  assert.match(html, /<title>MOCK - Verified Asset demo page<\/title>/);
+  assert.match(html, /<meta\s+name="robots"\s+content="noindex"\s*\/?\s*>/i);
+  assert.doesNotMatch(html, /<meta\b[^>]*\bog:/i);
+  assert.doesNotMatch(html, /facebook\.com/i);
+  assert.ok(html.includes("Mock page for demonstration. No real listing, seller or person."));
+  const fixture = JSON.parse(readFileSync(resolve(root, "test/mock-report.json"), "utf8"));
+  const demo = JSON.parse(readFileSync(resolve(root, "test/demo-mock-report.json"), "utf8"));
+  assert.deepEqual(Object.keys(demo).sort(), Object.keys(fixture).sort());
+  for (const key of Object.keys(fixture)) {
+    assert.equal(typeof demo[key], typeof fixture[key], key);
+  }
+  assert.equal(VA.parseReport(demo).state, "active");
+  assert.equal(demo.title, "Dining set");
+  assert.equal(demo.observer, fixture.observer);
+  assert.match(demo.digest, /^[a-f0-9]{64}$/);
+  assert.equal(demo.url, BASE + "/r/MOCK-DEMO-NOT-A-REAL-REPORT");
+  assert.equal(VA.findToken(BASE, [demo.url]), "MOCK-DEMO-NOT-A-REAL-REPORT");
+  assert.deepEqual(demo.verdicts.map((row) => [row.claim, row.status]), [
+    ["4 chairs", "supported"],
+    ["White", "supported"],
+    ["No visible damage", "contradicted"],
+    ["Very strong wood", "inconclusive"],
+  ]);
+  for (const row of demo.verdicts) {
+    assert.deepEqual(Object.keys(row).sort(), Object.keys(fixture.verdicts[0]).sort());
+    for (const key of Object.keys(row)) assert.equal(typeof row[key], "string", key);
+  }
+  assert.match(demo.verdicts[2].detail, /close-up shows a pale scratch near the edge/);
+  assert.match(demo.verdicts[3].detail, /Photos cannot show this/);
+});
+
 function decodePre(html) {
   const match = html.match(/<pre id="va-debug">([\s\S]*?)<\/pre>/);
   assert.ok(match, "debug output missing from the fixture page");
@@ -164,6 +201,27 @@ function dumpDom(url) {
     });
   });
 }
+
+test("demo mock page renders the Dining set report through the content script", async () => {
+  const server = await serve(root);
+  const { port } = server.address();
+  try {
+    const html = await dumpDom("http://127.0.0.1:" + port + "/test/demo-mock.html?mock=1");
+    const active = decodePre(html);
+    assert.equal(active.title, "Dining set");
+    assert.equal(active.price, "$120");
+    assert.match(active.description, /sample evidence report/);
+    assert.equal(active.token, "MOCK-DEMO-NOT-A-REAL-REPORT");
+    assert.equal(active.headline, "2 supported · 1 contradicted · 1 inconclusive");
+    assert.deepEqual(active.chips, ["Supported", "Supported", "Contradicted", "Inconclusive"]);
+    assert.match(active.details[2], /close-up shows a pale scratch near the edge/);
+    assert.equal(active.details[3], "Photos cannot show this.");
+    assert.equal(active.openHref, BASE + "/r/MOCK-DEMO-NOT-A-REAL-REPORT");
+    assert.equal(active.status, "");
+  } finally {
+    await new Promise((done) => server.close(done));
+  }
+});
 
 test("fixture page renders the report, the empty state, and the fallbacks", async () => {
   const server = await serve(root);
