@@ -1,6 +1,7 @@
 # secretos
 .env
 .env.*
+!.env.example
 *.key
 *.pem
 # python

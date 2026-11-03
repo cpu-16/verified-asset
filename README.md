@@ -27,6 +27,8 @@
 
 ---
 
+**Hackathon entry:** Startup track. **Use of Meta products:** Muse Spark 1.3 (blind observer, claim drafting, missing-photo planning) and SAM 3.1 (second-opinion counts, damage boxes) through the Meta API; Muse Glimmer 30B locally, for evaluation only. See [Built on Meta models](#built-on-meta-models) and the [provenance record](docs/provenance.md).
+
 Local pickup is where second-hand deals go wrong: the "set of six" has four chairs, the "no scratches" top has a gouge, and you find out after an hour in traffic. Marketplace already helps sellers write and price listings. Verified Asset answers a different question: **which of this listing's claims does the photo evidence support, which does it contradict, and which can photos not settle at all?**
 
 The seller chooses Furniture, Phones & tablets, Electronics & gaming, Clothing & shoes, or Kitchen & home, taps attribute suggestions or writes their claims, takes the few photos those claims need with the listing's code written on paper, and gets a report link to paste into the listing. Buyers open it without signing up.
@@ -167,9 +169,9 @@ Each photo's parsed observation is recorded by photo hash in [`eval/recordings`]
 
 ## What existed before the hackathon
 
-This repository's history starts on October 27, 2026: the first commit imported the planning documents in `docs/`, and everything else was written during the event. Before kickoff, the team had a private research prototype (listing-review scripts, notebooks, offline tests) and product planning; none of that code or its git history is included here. The [provenance record](docs/provenance.md) lists what was excluded and why.
+This repository's history starts on October 27, 2026, after the October 26 kickoff. Its first commit imported planning documents (`docs/architecture.md` and the D-07 decision record). Before kickoff the team had a private research prototype (listing-review scripts, notebooks, offline tests) and product planning in a separate repository; none of that prototype's code or git history is included here. The [provenance record](docs/provenance.md) says what was excluded, what was imported, and who did what.
 
-Built for the [Meta Global AI Developer Hackathon](https://cerebralvalley.ai/e/meta-ai-developer-hackathon) (October 26 to November 4, 2026) by Jeff and Gilberto at AdwenTech. An independent demo, not affiliated with Meta or Facebook Marketplace.
+Built for the [Meta Global AI Developer Hackathon](https://cerebralvalley.ai/e/meta-ai-developer-hackathon) (October 26 to November 4, 2026), Startup track. Concept and product decisions: Jeff. Code: Gilberto. Both at AdwenTech. An independent demo, not affiliated with Meta or Facebook Marketplace.
 
 ## License
 
