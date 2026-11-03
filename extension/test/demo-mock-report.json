@@ -1,0 +1,35 @@
+{
+  "state": "active",
+  "title": "Dining set",
+  "issued_at": "2026-10-27T18:00:00Z",
+  "expires_at": "2026-11-26T18:00:00Z",
+  "digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "url": "https://verified.adwentech.com/r/MOCK-DEMO-NOT-A-REAL-REPORT",
+  "observer": "muse-spark-1.3 (live)",
+  "verdicts": [
+    {
+      "claim": "4 chairs",
+      "status": "supported",
+      "detail": "The sample photos show four chairs.",
+      "request": ""
+    },
+    {
+      "claim": "White",
+      "status": "supported",
+      "detail": "Observed colour in the sample photos: white.",
+      "request": ""
+    },
+    {
+      "claim": "No visible damage",
+      "status": "contradicted",
+      "detail": "A close-up shows a pale scratch near the edge.",
+      "request": ""
+    },
+    {
+      "claim": "Very strong wood",
+      "status": "inconclusive",
+      "detail": "Photos cannot show this.",
+      "request": ""
+    }
+  ]
+}

@@ -46,6 +46,10 @@ python3 -m http.server 8765
 
 Open `http://127.0.0.1:8765/test/item.html?mock=1`.
 
+For recordings, start the same local server and open `http://127.0.0.1:8765/test/demo-mock.html?mock=1`.
+This separate demo page loads `test/demo-mock-report.json` through the same content script.
+Always keep the page labelled as a mock in recordings, including its permanent top banner.
+
 | Query | What you should see |
 | --- | --- |
 | `?mock=1` | Four claim rows from `test/mock-report.json` |
