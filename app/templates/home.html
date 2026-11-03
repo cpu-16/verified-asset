@@ -219,16 +219,20 @@
   .plates { top: 14.5em; }
   .float { position: relative; left: auto; right: auto; top: auto; bottom: auto; width: auto; font-size: 15px; }
   .floats { display: grid; gap: 10px; }
-  .stats { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stats span { display: block; line-height: 1.35; hyphens: auto; overflow-wrap: break-word; }
   .example, .eval, .limits-grid { grid-template-columns: minmax(0, 1fr); }
   .section { margin-bottom: 4.5rem; }
 }
 @media (min-width: 52.01em) { .floats { display: contents; } }
 @media (max-width: 36em) {
   .how, .credits { grid-template-columns: minmax(0, 1fr); }
-  .stats li { padding: 0 .9rem; }
   .stats b { font-size: 1.45rem; }
   .stats span { font-size: .8125rem; }
+  /* phones: one row per figure, so large text never runs a label into the next column */
+  .stats { grid-template-columns: minmax(0, 1fr); gap: .4rem; }
+  .stats li { display: flex; align-items: baseline; gap: .75rem; padding: 0; border-left: 0; }
+  .stats b { flex: none; min-width: 2.6em; }
   .ctas > *, .ctas form, .ctas button { width: 100%; }
 }
 {% endblock %}

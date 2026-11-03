@@ -549,19 +549,20 @@ h2.pill { margin: 0 0 .6rem; font-size: .875rem; letter-spacing: 0; }
 .attribute-editor .claim-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 0; border-radius: 0; border-width: 0 0 1px; background: none; }
 .attribute-editor .claim-row[hidden] { display: none; }
 .attribute-editor .claim-row label { font-size: 0; margin: 0; }
-.attribute-editor .claim-row .text { flex: 1; order: -1; }
+/* rem bases instead of breakpoints: with large text the claim gets its own line and the controls wrap below it */
+.attribute-editor .claim-row .text { flex: 3 1 14rem; order: -1; }
 .attribute-editor .claim-row input, .attribute-editor .claim-row select { margin: 0; min-height: 44px; padding: 6px; font-size: .8rem; border-radius: 6px; }
 .attribute-editor .claim-phrase { width: 100%; padding: 6px; justify-content: flex-start; text-align: left; font-size: .8rem; font-weight: 400; border: 0; border-radius: 6px; background: none; box-shadow: none; }
 .attribute-editor .claim-phrase[hidden] { display: none; }
 .attribute-editor .claim-row .text input { background: transparent; border-color: transparent; }
 .attribute-editor .claim-row .text input:focus { border-color: var(--violet-hi); }
-.attribute-editor .claim-row .value { width: 5rem; }
+.attribute-editor .claim-row .value { flex: 1 1 7rem; }
 .attribute-editor .claim-row .what { width: 7rem; }
 .attribute-editor .claim-row .remove-claim { flex: 0 0 44px; width: 44px; padding: 0; border: 0; border-radius: 6px; font-size: 1.2rem; }
-.attribute-editor .claim-row > label:first-child { width: 7rem; }
+.attribute-editor .claim-row > label:first-child { flex: 1 1 9rem; }
 .attribute-editor .claim-row label[hidden] { display: none; }
 .attribute-editor .claim-row .value:not([hidden]), .attribute-editor .claim-row .what:not([hidden]) { display: block; }
-.attribute-editor .claim-row[data-compact="yes"] { flex-wrap: nowrap; }
+.attribute-editor .claim-row[data-compact="yes"] .text { flex-basis: 10rem; }
 .attribute-editor .claim-row .ai-tag { position: static; font-size: .7rem; }
 @media (max-width: 600px) {
   .topbar { flex-wrap: wrap; height: auto; min-height: 64px; }
