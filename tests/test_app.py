@@ -4,6 +4,7 @@ import importlib
 import io
 import json
 import re
+from html import unescape
 
 import pytest
 from fastapi.testclient import TestClient
@@ -90,6 +91,61 @@ def test_full_lifecycle(client):
     old = c.get(f"/api/r/{token}").json()
     assert old["state"] == "invalidated" and "verdicts" not in old
     assert c.get(f"/r/{token}/photo/front").status_code == 404  # photos go dark with the report
+
+
+def test_blind_json_is_pretty_printed_and_seller_only(client):
+    main, c = client
+    main.app.state.observer = FakeObserver()
+    listing_id, key = make_listing(c)
+    c.post(f"/l/{listing_id}/check?k={key}")
+    page = c.get(f"/l/{listing_id}?k={key}").text
+    panel = re.search(r'<details class="check-explanation"><summary>What Muse Spark saw \(blind JSON\)</summary>(.*?)</details>',
+                      page, re.S)
+    assert panel is not None  # no open attribute: closed by default
+    assert 'id="check"' in page[:panel.start()]
+    assert "One photo at a time, never the claims. Defect boxes, where present, were added by SAM 3.1. The rules below decide from this." in panel[1]
+    check = main.store.latest_check(main.store.latest_version(listing_id)["id"])
+    expected = json.dumps(json.loads(check["observations"]), indent=2, ensure_ascii=False)
+    assert unescape(re.search(r'<pre class="mono">(.*?)</pre>', panel[1], re.S)[1]) == expected
+    assert "photo_id" in panel[1]
+
+    token = c.post(f"/l/{listing_id}/report?k={key}", follow_redirects=False).headers["location"].rsplit("/", 1)[1]
+    for path in (f"/r/{token}", f"/r/{token}/listing", f"/api/r/{token}"):
+        response = c.get(path)
+        assert response.status_code == 200
+        assert "What Muse Spark saw (blind JSON)" not in response.text
+        assert '"dominant_colors"' not in response.text  # the raw observations never render publicly
+
+
+@pytest.mark.parametrize("failed_check", [False, True])
+def test_blind_json_hidden_without_a_successful_check(client, failed_check):
+    main, c = client
+    listing_id, key = make_listing(c)
+    if failed_check:
+        main.app.state.observer = FakeObserver(ok=False)
+        c.post(f"/l/{listing_id}/check?k={key}")
+    assert "What Muse Spark saw (blind JSON)" not in c.get(f"/l/{listing_id}?k={key}").text
+
+
+def test_blind_json_escapes_observation_html(client, monkeypatch):
+    main, c = client
+    observer = FakeObserver()
+    observe = observer.observe
+    item = '<script>alert("café")</script>'
+
+    def observe_with_html(photos, count_nouns):
+        result = observe(photos, count_nouns)
+        result.observations = [dataclasses.replace(o, item=item) for o in result.observations]
+        return result
+
+    monkeypatch.setattr(observer, "observe", observe_with_html)
+    main.app.state.observer = observer
+    listing_id, key = make_listing(c)
+    c.post(f"/l/{listing_id}/check?k={key}")
+    page = c.get(f"/l/{listing_id}?k={key}").text
+    pre = re.search(r'<pre class="mono">(.*?)</pre>', page, re.S)[1]
+    assert "<script>" not in pre and "&lt;script&gt;" in pre and "&lt;/script&gt;" in pre
+    assert "café" in pre and json.loads(unescape(pre))[0]["item"] == item
 
 
 def test_active_report_shows_the_checked_photos(client):
@@ -310,6 +366,8 @@ def test_sample_end_to_end_without_key(sample):
     assert 'data-initial-step="check"' in page
     c.post(f"/l/{listing_id}/check?k={key}")
     page = c.get(f"/l/{listing_id}?k={key}").text  # Spark's recorded plan asks for the missing close-up
+    assert "<summary>What Muse Spark saw (blind JSON) · Recorded</summary>" in page
+    assert "photo_id" in page
     assert "Muse Spark asks for this photo" in page and "Add the sample close-up" in page
     assert "corner and edge" in page and 'class="plan-box"' in page
     r = c.post(f"/l/{listing_id}/sample-detail?k={key}", follow_redirects=False)

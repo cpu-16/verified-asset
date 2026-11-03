@@ -287,6 +287,8 @@ def listing_page(request: Request, listing_id: str, k: str):
         "listing": row, "k": k, "version": version, "claims": claims, "photos": photos,
         "slots": [(s, SLOT_PROMPTS[s]) for s in required_slots(claims)] or [(Slot.FRONT, SLOT_PROMPTS[Slot.FRONT])],
         "check": check, "verdicts": verdicts, "stale": stale, "marks": marks,
+        "observations_json": json.dumps(json.loads(check["observations"] or "[]"), indent=2, ensure_ascii=False)
+        if check and check["ok"] else "",
         "reports": active, "posts": posts, "types": list(ClaimType),
         "rows": range(CLAIM_ROWS)})
 
