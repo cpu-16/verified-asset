@@ -103,7 +103,7 @@ def test_blind_json_is_pretty_printed_and_seller_only(client):
                       page, re.S)
     assert panel is not None  # no open attribute: closed by default
     assert 'id="check"' in page[:panel.start()]
-    assert "One photo at a time, never the claims. The rules below decide from this." in panel[1]
+    assert "One photo at a time, never the claims. Defect boxes, where present, were added by SAM 3.1. The rules below decide from this." in panel[1]
     check = main.store.latest_check(main.store.latest_version(listing_id)["id"])
     expected = json.dumps(json.loads(check["observations"]), indent=2, ensure_ascii=False)
     assert unescape(re.search(r'<pre class="mono">(.*?)</pre>', panel[1], re.S)[1]) == expected
@@ -114,6 +114,7 @@ def test_blind_json_is_pretty_printed_and_seller_only(client):
         response = c.get(path)
         assert response.status_code == 200
         assert "What Muse Spark saw (blind JSON)" not in response.text
+        assert '"dominant_colors"' not in response.text  # the raw observations never render publicly
 
 
 @pytest.mark.parametrize("failed_check", [False, True])
