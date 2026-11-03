@@ -14,7 +14,7 @@
   {% set current = c.type if c else 'uncheckable' %}{% set tagged = c and (suggested or c.by) %}
     <div class="claim-row{% if tagged %} suggested{% endif %}" {% if not c %}hidden{% endif %}>
       <label>Type <select name="type{{ i }}">
-        {% for t in types %}<option value="{{ t }}" {% if current == t %}selected{% endif %}>{{ {"color": "Color", "piece_count": "Number of pieces", "no_visible_damage": "No visible damage", "part_no_damage": "No damage on a part", "label_text": "Label text", "uncheckable": "Other (not checked from photos)"}[t] }}</option>{% endfor %}
+        {% for t in types %}<option value="{{ t }}" {% if current == t %}selected{% endif %}>{{ {"color": "Color", "piece_count": "Number of pieces", "no_visible_damage": "No visible damage", "part_no_damage": "No damage on a part", "label_text": "Label text", "uncheckable": "Other (not checked)"}[t] }}</option>{% endfor %}
       </select></label>
       <label class="text">Your claim <input name="text{{ i }}" maxlength="200" value="{{ c.text if c else '' }}"></label>
       <label class="what">Object or part <input name="subject{{ i }}" maxlength="40" value="{{ c.subject if c else '' }}"></label>
