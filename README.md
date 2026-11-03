@@ -39,6 +39,8 @@ On the [live site](https://verified.adwentech.com), **Try the sample** runs the 
 
 ## How it works
 
+**More than an image analyzer.** No model is asked whether a claim is true. Muse Spark describes each photo blind, without the claimed values; fixed rules decide each claim; when the photos can't settle one, Muse Spark plans the one photo that would, and the next blind check and the rules run on it; SAM 3.1 gives a second opinion on piece counts and boxes the damage Spark found; and the report is bound to the listing version and each photo's hash, so editing the listing voids it.
+
 ```mermaid
 flowchart LR
     claims["Seller writes claims<br/>4 chairs, white, no scratches"] --> photos["Guided photos<br/>front, side, close-up<br/>+ listing code on paper"]
