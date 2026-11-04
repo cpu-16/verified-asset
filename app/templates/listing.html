@@ -290,12 +290,13 @@
 
   <section class="card" id="share" data-step="Share">
     <h2>Share the report</h2>
-    {% if check and check.ok and not stale %}{% if not reports %}
-    <p class="soft">Paste the report link in your listing's description. Buyers see each claim and its result.</p>
+    {% if check and check.ok and not stale and photos %}{% if not current %}
+    <p class="soft">{% if reports %}Your latest check isn't in a report yet. Create a new link and paste it instead of the old one.{% else %}Paste the report link in your listing's description. Buyers see each claim and its result.{% endif %}</p>
     <form method="post" action="/l/{{ listing.id }}/report?k={{ k }}"><div class="form-actions"><button type="submit">Create report link</button></div></form>
-    {% endif %}{% else %}<p class="soft">Available after a successful check.</p>{% endif %}
+    {% endif %}{% elif check and check.ok and not stale %}<p class="soft">Add at least one photo and check again to create a report.</p>{% else %}<p class="soft">Available after a successful check.</p>{% endif %}
     {% for r in reports %}
     <div class="share-block">
+      {% if check and r.check_id != check.id %}<p class="soft"><strong>From an earlier check.</strong> It doesn't show your latest results.</p>{% endif %}
       <p class="share">
         <a href="/r/{{ r.token }}">{{ request.base_url }}r/{{ r.token }}</a>
         <button type="button" class="secondary" data-copy="{{ request.base_url }}r/{{ r.token }}">Copy link</button>
