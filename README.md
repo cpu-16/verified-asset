@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="https://verified.adwentech.com"><img alt="Live site" src="https://img.shields.io/badge/live-verified.adwentech.com-0866FF"></a>
+  <a href="https://youtu.be/4_IAOyRUIAw"><img alt="Demo video, 2:31" src="https://img.shields.io/badge/demo%20video-2%3A31-0866FF"></a>
   <a href="https://github.com/cpu-16/verified-asset/actions/workflows/tests.yml"><img alt="Tests" src="https://github.com/cpu-16/verified-asset/actions/workflows/tests.yml/badge.svg"></a>
   <img alt="Muse Spark 1.3" src="https://img.shields.io/badge/observer-Muse%20Spark%201.3-1C2B33">
   <img alt="SAM 3.1" src="https://img.shields.io/badge/second%20opinion-SAM%203.1-1C2B33">
@@ -27,7 +28,7 @@
 
 ---
 
-**Hackathon entry:** Startup track. **Use of Meta products:** Muse Spark 1.3 (blind observer, claim drafting, missing-photo planning) and SAM 3.1 (second-opinion counts, damage boxes) through the Meta API; Muse Glimmer 30B locally, for evaluation only. See [Built on Meta models](#built-on-meta-models) and the [provenance record](docs/provenance.md).
+**Hackathon entry:** Startup track. **Demo video (2:31):** https://youtu.be/4_IAOyRUIAw · **Live site:** https://verified.adwentech.com. **Use of Meta products:** Muse Spark 1.3 (blind observer, claim drafting, missing-photo planning) and SAM 3.1 (second-opinion counts, damage boxes) through the Meta API; Muse Glimmer 30B locally, for evaluation only. See [Built on Meta models](#built-on-meta-models) and the [provenance record](docs/provenance.md).
 
 Local pickup is where second-hand deals go wrong: the "set of six" has four chairs, the "no scratches" top has a gouge, and you find out after an hour in traffic. Marketplace already helps sellers write and price listings. Verified Asset answers a different question: **which of this listing's claims does the photo evidence support, which does it contradict, and which can photos not settle at all?**
 
