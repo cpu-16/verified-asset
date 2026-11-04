@@ -59,7 +59,7 @@ Before kickoff, we had a Python research prototype (scripts, notebooks and notes
 
 - Demo: https://verified.adwentech.com <!-- fuente: README.md -->
 - Repository: https://github.com/cpu-16/verified-asset <!-- fuente: README.md; .git/config (origin) -->
-- Video: _link added when published_
+- Video: https://youtu.be/4_IAOyRUIAw (2:31, unlisted)
 - Non-furniture example: https://verified.adwentech.com/r/KD4jm0QEXOQQ_Fg3LKueng — **contradicted**, “crack (phone screen)”. <!-- fuente: app/main.py:report_page -->
 
 ## Video script — 3:00
