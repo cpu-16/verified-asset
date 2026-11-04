@@ -280,6 +280,7 @@ def listing_page(request: Request, listing_id: str, k: str):
         draft["claims"] = [Claim.from_dict(d) for d in draft["claims"]]
     active = [r for r in store.active_reports(listing_id)
               if reports.effective_state(r["state"], r["expires_at"]) == "active"]
+    current = bool(check) and any(r["check_id"] == check["id"] for r in active)  # a report of the latest check
     posts = {r["token"]: build_post(version, json.loads(r["payload"]),
                                   str(request.url_for("report_page", token=r["token"]))) for r in active}
     return templates.TemplateResponse(request, "listing.html", {
@@ -289,7 +290,7 @@ def listing_page(request: Request, listing_id: str, k: str):
         "check": check, "verdicts": verdicts, "stale": stale, "marks": marks,
         "observations_json": json.dumps(json.loads(check["observations"] or "[]"), indent=2, ensure_ascii=False)
         if check and check["ok"] else "",
-        "reports": active, "posts": posts, "types": list(ClaimType),
+        "reports": active, "current": current, "posts": posts, "types": list(ClaimType),
         "rows": range(CLAIM_ROWS)})
 
 
@@ -417,6 +418,8 @@ def issue_listing(listing_id: str, k: str):
     checked = json.loads(check["photos"])
     if checked != {s: p["id"] for s, p in current.items()}:
         raise HTTPException(409, "Photos changed since the last check. Run the check again.")
+    if not checked:
+        raise HTTPException(409, "Add at least one photo and check again. A report without photos backs up nothing.")
     from .adjudicate import Verdict, Status
     verdicts = [Verdict(v["claim_id"], Status(v["status"]), v["reason"], v["detail"],
                         tuple(v["photo_ids"]), v["request"]) for v in json.loads(check["verdicts"])]

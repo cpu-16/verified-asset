@@ -179,6 +179,34 @@ def test_retake_after_check_requires_a_new_check(client):
     assert c.post(f"/l/{listing_id}/report?k={key}").status_code == 409
 
 
+def test_recheck_after_a_report_offers_a_new_link(client):
+    main, c = client
+    main.app.state.observer = FakeObserver()
+    listing_id, key = make_listing(c)
+    c.post(f"/l/{listing_id}/check?k={key}")
+    c.post(f"/l/{listing_id}/report?k={key}")
+    assert "Create report link" not in c.get(f"/l/{listing_id}?k={key}").text
+    c.post(f"/l/{listing_id}/photo?k={key}", data={"slot": "front"},
+           files={"file": ("p.jpg", jpeg(), "image/jpeg")})
+    c.post(f"/l/{listing_id}/check?k={key}")
+    page = c.get(f"/l/{listing_id}?k={key}").text
+    assert "Create report link" in page and "From an earlier check" in page
+    c.post(f"/l/{listing_id}/report?k={key}")
+    page = c.get(f"/l/{listing_id}?k={key}").text
+    assert "Create report link" not in page and page.count("From an earlier check") == 1
+
+
+def test_no_photos_never_produces_a_report(client):
+    main, c = client
+    main.app.state.observer = FakeObserver()
+    r = c.post("/new", data={"title": "Lamp", "type0": "color", "text0": "White", "value0": "white"},
+               follow_redirects=False)
+    listing_id, key = re.match(r"/l/([^?]+)\?k=(.+)", r.headers["location"]).groups()
+    c.post(f"/l/{listing_id}/check?k={key}")
+    assert "Create report link" not in c.get(f"/l/{listing_id}?k={key}").text
+    assert c.post(f"/l/{listing_id}/report?k={key}").status_code == 409
+
+
 def test_capture_code_and_revoke(client):
     main, c = client
     listing_id, key = make_listing(c)
